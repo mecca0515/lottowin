@@ -128,20 +128,6 @@
             opacity: 1;
         }
 
-        /* 결과 배너 스타일 */
-        .result-banner {
-            transition: all 0.3s ease-out;
-            max-height: 0;
-            overflow: hidden;
-            opacity: 0;
-        }
-        .result-banner.show {
-            max-height: 50px;
-            opacity: 1;
-            margin-bottom: 0.25rem;
-            padding: 0.1rem 0.25rem;
-        }
-
         #result-modal, #manual-input-modal, #delete-confirm-modal {
             background-color: rgba(0, 0, 0, 0.5);
         }
@@ -204,10 +190,8 @@
                 <div id="global-result-overlay" class="absolute inset-0 bg-white flex flex-col justify-center items-center hidden z-20">
                     <h2 id="global-rank-title" class="text-xl font-bold mb-1"></h2>
                     <p id="global-rank-desc" class="text-sm text-gray-500"></p>
-                    
-                    <!-- 구분선 추가 -->
+                    <!-- 구분선 -->
                     <hr class="w-16 border-gray-300 my-3">
-                    
                     <!-- 닫기 버튼: 패딩을 줄여서 더 날렵하게 (py-1 px-4) -->
                     <button onclick="closeGlobalResult()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-1 px-4 rounded-md text-sm transition shadow-sm border border-gray-300">
                         닫기
@@ -254,7 +238,8 @@
                 </div>
                 <!-- Fixed Height Container for History -->
                 <div id="history-container" class="relative bg-white bg-opacity-30 rounded-lg border border-gray-100 p-2">
-                    <div id="history-list" class="space-y-2 h-60 overflow-y-auto custom-scrollbar pr-1">
+                    <!-- 높이를 h-[28rem] (약 450px)으로 늘려 5게임 이상 넉넉하게 보이게 수정 -->
+                    <div id="history-list" class="space-y-2 h-[28rem] overflow-y-auto custom-scrollbar pr-1">
                         <!-- History items will appear here -->
                         <div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400">
                             <i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i>
@@ -362,6 +347,7 @@
         let manualSelection = new Set();
         // State Management
         let historyData = []; // Array of objects {id, round, numbers, tag, date}
+        let winResults = {}; // 당첨 결과 캐시 저장소 (key: round, value: api data)
         let currentRound = 0;
 
         const historyList = document.getElementById('history-list');
@@ -389,6 +375,12 @@
             const storedHistory = localStorage.getItem('lotto_history');
             if (storedHistory) {
                 historyData = JSON.parse(storedHistory);
+            }
+
+            // Load win results cache
+            const storedWinResults = localStorage.getItem('lotto_win_results');
+            if (storedWinResults) {
+                winResults = JSON.parse(storedWinResults);
             }
 
             // Calculate or load current round
@@ -499,6 +491,19 @@
                 const item = createHistoryItemElement(game);
                 historyList.appendChild(item);
             });
+
+            // If we have cached results for this round, auto-check
+            if (winResults[round]) {
+                const data = winResults[round];
+                const winArr = [
+                    data.drwtNo1, data.drwtNo2, data.drwtNo3, 
+                    data.drwtNo4, data.drwtNo5, data.drwtNo6
+                ];
+                // Delay slightly to ensure elements are ready
+                setTimeout(() => {
+                    checkWinningsInHistory(winArr, data.bnusNo, false); // false: Don't show toast on auto-check
+                }, 100);
+            }
         }
 
         function createHistoryItemElement(game) {
@@ -508,10 +513,7 @@
             // Flex col to stack banner and content
             item.className = 'history-item bg-white bg-opacity-80 p-2 rounded-lg border border-gray-100 flex flex-col shadow-sm items-start';
             
-            // 1. Result Banner (Hidden by default)
-            const resultBanner = document.createElement('div');
-            resultBanner.className = 'result-banner w-full text-center text-xs rounded'; 
-            item.appendChild(resultBanner);
+            // Result Banner Removed (Moved to side of tag)
 
             // Content Wrapper (Row)
             const contentRow = document.createElement('div');
@@ -520,9 +522,9 @@
             const leftDiv = document.createElement('div');
             leftDiv.className = 'flex flex-col';
 
-            // Balls
+            // Balls Container: Added gap-1 for spacing
             const ballsContainer = document.createElement('div');
-            ballsContainer.className = 'flex ball-container items-center';
+            ballsContainer.className = 'flex ball-container items-center gap-1';
             game.numbers.forEach(num => {
                 const smallBall = document.createElement('div');
                 smallBall.className = `lotto-ball small-ball ${getBallColorClass(num)}`;
@@ -532,11 +534,12 @@
             });
             leftDiv.appendChild(ballsContainer);
             
+            // Meta Info Container (Tags + Rank)
+            const metaDiv = document.createElement('div');
+            metaDiv.className = 'flex items-center mt-1 ml-1 meta-info';
+            
             // Tags
             if (game.tag) {
-                const metaDiv = document.createElement('div');
-                metaDiv.className = 'flex items-center mt-1 ml-1 meta-info';
-                
                 const tagSpan = document.createElement('span');
                 let colorClass = 'text-gray-400';
                 let icon = '';
@@ -552,8 +555,14 @@
                 tagSpan.className = `text-[10px] font-bold ${colorClass}`;
                 tagSpan.textContent = icon + game.tag;
                 metaDiv.appendChild(tagSpan);
-                leftDiv.appendChild(metaDiv);
             }
+
+            // Rank Badge Placeholder (Added here)
+            const rankSpan = document.createElement('span');
+            rankSpan.className = 'rank-badge text-[10px] font-bold ml-2 hidden'; // Hidden by default
+            metaDiv.appendChild(rankSpan);
+
+            leftDiv.appendChild(metaDiv);
 
             // Right side
             const rightDiv = document.createElement('div');
@@ -977,6 +986,20 @@
         /* --- Result & Checking Logic --- */
         async function fetchLatestResult() {
             const round = document.getElementById('round-input').value;
+            
+            // 1. 캐시 확인
+            if (winResults[round]) {
+                showModal();
+                const cachedData = winResults[round];
+                renderModalContent(cachedData);
+                const winArr = [
+                    cachedData.drwtNo1, cachedData.drwtNo2, cachedData.drwtNo3, 
+                    cachedData.drwtNo4, cachedData.drwtNo5, cachedData.drwtNo6
+                ];
+                checkWinningsInHistory(winArr, cachedData.bnusNo, true); 
+                return;
+            }
+
             showModal();
             modalContent.innerHTML = `
                 <div class="animate-pulse flex space-x-2 justify-center items-center h-16">
@@ -1009,7 +1032,7 @@
             }
 
             try {
-                // 1. Proxy 제거 및 직접 호출
+                // 1. Proxy 제거 및 직접 호출 (CORS issue may occur in some envs, fallback logic handles it)
                 const timestamp = new Date().getTime();
                 const targetUrl = `https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=${round}&_=${timestamp}`;
                 
@@ -1019,7 +1042,7 @@
                 
                 const jsonResponse = await response.json();
 
-                // 2. 새로운 응답 구조 파싱 (data.list[0])
+                // 2. 응답 구조 파싱 (data.list[0])
                 if (jsonResponse.data && jsonResponse.data.list && jsonResponse.data.list.length > 0) {
                     const lottoData = jsonResponse.data.list[0];
                     
@@ -1040,13 +1063,17 @@
                         bnusNo: lottoData.bnsWnNo
                     };
 
+                    // 3. 캐시 저장
+                    winResults[round] = mappedData;
+                    localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
+
                     renderModalContent(mappedData);
                     
                     const winArr = [
                         mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, 
                         mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6
                     ];
-                    checkWinningsInHistory(winArr, mappedData.bnusNo);
+                    checkWinningsInHistory(winArr, mappedData.bnusNo, true);
                 } else {
                     throw new Error('아직 추첨 결과가 없거나 데이터 형식이 올바르지 않습니다.');
                 }
@@ -1077,11 +1104,11 @@
                 };
                 
                 renderModalContent(mockData);
-                checkWinningsInHistory(winArr, bonus);
+                checkWinningsInHistory(winArr, bonus, true);
             }
         }
 
-        function checkWinningsInHistory(winArr, bonus) {
+        function checkWinningsInHistory(winArr, bonus, showMessage = true) {
             const items = document.querySelectorAll('.history-item');
             
             let bestRank = 6; // 6: 낙첨, 5: 5등, ... 1: 1등
@@ -1113,56 +1140,55 @@
                 });
 
                 let rank = 0;
-                let bannerText = '';
-                // Set default class to be small and same height
-                let bannerClass = 'text-gray-500 bg-gray-100 text-xs border-2 border-transparent'; 
+                let rankText = '';
+                let rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; // Default style
 
                 // 등수 판별
                 if (matchCount === 6) { 
                     rank = 1; 
-                    bannerText = '🏆 1등! 대박 축하합니다! 🏆';
-                    bannerClass = 'bg-gradient-to-r from-yellow-400 via-yellow-200 to-yellow-400 text-yellow-800 border-2 border-yellow-300 text-xs';
+                    rankText = '🏆 1등 당첨!';
+                    rankClass = 'text-red-600 pl-2 border-l border-red-200';
                 }
                 else if (matchCount === 5 && isBonusMatched) { 
                     rank = 2; 
-                    bannerText = '🥈 2등! 정말 아깝네요!';
-                    bannerClass = 'bg-gradient-to-r from-gray-200 to-gray-400 text-gray-800 text-xs border-2 border-transparent';
+                    rankText = '🥈 2등 당첨!';
+                    rankClass = 'text-orange-600 pl-2 border-l border-orange-200';
                 }
                 else if (matchCount === 5) { 
                     rank = 3; 
-                    bannerText = '🥉 3등 당첨!';
-                    bannerClass = 'bg-gradient-to-r from-orange-200 to-orange-400 text-orange-900 text-xs border-2 border-transparent';
+                    rankText = '🥉 3등 당첨!';
+                    rankClass = 'text-yellow-600 pl-2 border-l border-yellow-200';
                 }
                 else if (matchCount === 4) { 
                     rank = 4; 
-                    bannerText = '4등 당첨';
-                    bannerClass = 'bg-blue-100 text-blue-700 text-xs border-2 border-transparent';
+                    rankText = '4등 (5만원)';
+                    rankClass = 'text-blue-600 pl-2 border-l border-blue-200';
                 }
                 else if (matchCount === 3) { 
                     rank = 5; 
-                    bannerText = '5등 당첨';
-                    bannerClass = 'bg-green-100 text-green-700 text-xs border-2 border-transparent';
+                    rankText = '5등 (5천원)';
+                    rankClass = 'text-green-600 pl-2 border-l border-green-200';
                 }
                 else { 
                     rank = 6; 
-                    // 1. 낙첨 문구 스타일 복원 (작게)
-                    bannerText = '꽝.. 아쉽지만 다음 기회에...';
-                    bannerClass = 'bg-gray-50 text-gray-400 text-xs border-2 border-transparent'; 
+                    rankText = '낙첨 (다음 기회에..)';
+                    rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; 
                 }
 
                 if (rank > 0 && rank < bestRank) bestRank = rank;
 
-                const banner = item.querySelector('.result-banner');
-                if (banner) {
-                    banner.textContent = bannerText;
-                    banner.className = `result-banner w-full text-center font-bold rounded ${bannerClass}`;
-                    setTimeout(() => banner.classList.add('show'), 50);
+                // Update Rank Badge (New location next to tag)
+                const rankBadge = item.querySelector('.rank-badge');
+                if (rankBadge) {
+                    rankBadge.textContent = rankText;
+                    rankBadge.className = `rank-badge text-[10px] font-bold ml-2 ${rankClass}`;
+                    rankBadge.classList.remove('hidden');
                 }
             });
             
             // 2. 전체 결과 표시 (가운데 영역)
             displayGlobalResult(bestRank);
-            showToast("결과 확인 완료!");
+            if(showMessage) showToast("결과 확인 완료!");
         }
 
         function displayGlobalResult(bestRank) {
