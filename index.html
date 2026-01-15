@@ -128,6 +128,20 @@
             opacity: 1;
         }
 
+        /* 결과 배너 스타일 */
+        .result-banner {
+            transition: all 0.3s ease-out;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+        }
+        .result-banner.show {
+            max-height: 50px;
+            opacity: 1;
+            margin-bottom: 0.25rem;
+            padding: 0.1rem 0.25rem;
+        }
+
         #result-modal, #manual-input-modal, #delete-confirm-modal {
             background-color: rgba(0, 0, 0, 0.5);
         }
@@ -155,21 +169,24 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-2">
 
     <div class="main-container max-w-md w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         <!-- Header -->
-        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-center shrink-0 flex flex-col items-center">
-            <h1 class="text-2xl font-bold text-white mb-1">
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-center shrink-0 flex flex-col items-center">
+            <h1 class="text-xl font-bold text-white mb-1">
                 <i class="fas fa-clover mr-2"></i>로또 번호 생성기
             </h1>
-            <p class="text-purple-100 text-sm mb-3">오늘의 행운을 시험해보세요!</p>
+            <p class="text-purple-100 text-xs mb-2">오늘의 행운을 시험해보세요!</p>
             
-            <!-- Round Input + Date Display -->
-            <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-3 py-1.5 shadow-inner transition-colors hover:bg-opacity-30 gap-2">
+            <!-- Round Select + Date Display -->
+            <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-2 py-1 shadow-inner transition-colors hover:bg-opacity-30 gap-2">
                 <div class="flex items-center border-r border-white border-opacity-30 pr-2">
                     <span class="text-white text-xs mr-2 font-bold">회차 선택</span>
-                    <input type="number" id="round-input" class="w-16 bg-transparent text-white text-right font-bold focus:outline-none text-sm border-b border-white border-opacity-50 appearance-none" value="">
+                    <!-- Input -> Select 변경 -->
+                    <select id="round-input" class="w-16 bg-transparent text-white text-right font-bold focus:outline-none text-xs appearance-none cursor-pointer">
+                        <!-- JS로 옵션 채워짐 -->
+                    </select>
                     <span class="text-white text-xs ml-1">회</span>
                 </div>
                 <!-- Draw Date Display -->
@@ -178,55 +195,56 @@
         </div>
 
         <!-- Main Content -->
-        <div class="p-6 pb-2 shrink-0">
+        <div class="p-4 pb-2 shrink-0">
             <!-- Display Area: Can show Balls or Global Result Message -->
-            <div id="numbers-container" class="flex flex-col justify-center items-center h-[120px] bg-white bg-opacity-50 rounded-xl p-4 mb-6 border border-gray-100 shadow-sm transition-all overflow-hidden relative">
+            <div id="numbers-container" class="flex flex-col justify-center items-center min-h-[6rem] py-6 bg-white bg-opacity-50 rounded-xl px-2 mb-3 border border-gray-100 shadow-sm transition-all overflow-hidden relative">
                 <!-- Default Placeholder or Balls -->
-                <div id="generated-balls-area" class="flex flex-wrap justify-center items-center w-full h-full">
-                    <span class="text-gray-500 text-sm">버튼을 눌러 번호를 생성하세요</span>
+                <div id="generated-balls-area" class="flex flex-wrap justify-center items-center w-full gap-2">
+                    <span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>
                 </div>
                 
                 <!-- Global Result Overlay (Initially Hidden) -->
                 <div id="global-result-overlay" class="absolute inset-0 bg-white flex flex-col justify-center items-center hidden z-20">
-                    <h2 id="global-rank-title" class="text-xl font-bold mb-1"></h2>
-                    <p id="global-rank-desc" class="text-sm text-gray-500"></p>
-                    <!-- 구분선 -->
-                    <hr class="w-16 border-gray-300 my-3">
+                    <h2 id="global-rank-title" class="text-lg font-bold mb-1"></h2>
+                    <p id="global-rank-desc" class="text-xs text-gray-500 mb-2"></p>
+                    
+                    <!-- 구분선 제거됨 -->
+                    
                     <!-- 닫기 버튼: 패딩을 줄여서 더 날렵하게 (py-1 px-4) -->
-                    <button onclick="closeGlobalResult()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-1 px-4 rounded-md text-sm transition shadow-sm border border-gray-300">
+                    <button onclick="closeGlobalResult()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-1 px-4 rounded-md text-xs transition shadow-sm border border-gray-300">
                         닫기
                     </button>
                 </div>
             </div>
 
             <!-- Controls -->
-            <div class="flex gap-2 mb-4">
-                <button onclick="generateLotto()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2 text-sm">
+            <div class="flex gap-2 mb-2">
+                <button onclick="generateLotto()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-1 text-xs">
                     <i class="fas fa-sync-alt"></i> 번호 생성
                 </button>
                 
                 <!-- Image/QR Scan Button -->
-                <button onclick="triggerImageUpload()" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2" title="이미지/QR 번호 추출">
+                <button onclick="triggerImageUpload()" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2" title="이미지/QR 번호 추출">
                     <i class="fas fa-camera"></i>
                 </button>
                 <input type="file" id="image-input" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
 
                 <!-- Manual Input Button -->
-                <button onclick="openManualInput()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2" title="수동 입력">
+                <button onclick="openManualInput()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2" title="수동 입력">
                     <i class="fas fa-hand-pointer"></i>
                 </button>
 
-                <button onclick="copyNumbers()" id="copy-btn" class="bg-white hover:bg-gray-100 text-gray-700 font-bold py-3 px-3 rounded-xl transition duration-200 border border-gray-200 shadow-sm" title="클립보드에 복사">
+                <button onclick="copyNumbers()" id="copy-btn" class="bg-white hover:bg-gray-100 text-gray-700 font-bold py-2 px-3 rounded-xl transition duration-200 border border-gray-200 shadow-sm" title="클립보드에 복사">
                     <i class="far fa-copy"></i>
                 </button>
             </div>
         </div>
 
         <!-- History (Fixed Height Area) -->
-        <div class="px-6 pb-6 flex-1 flex flex-col">
-            <div class="border-t border-gray-100 pt-4 flex flex-col h-full">
-                <div class="flex justify-between items-center mb-3 shrink-0">
-                    <h2 class="text-sm font-bold text-gray-600 uppercase tracking-wide">
+        <div class="px-4 pb-0 flex-1 flex flex-col">
+            <div class="border-t border-gray-100 pt-2 flex flex-col h-full">
+                <div class="flex justify-between items-center mb-2 shrink-0">
+                    <h2 class="text-xs font-bold text-gray-600 uppercase tracking-wide">
                         <span id="history-round-label">현재</span> 회차 기록
                     </h2>
                     <div class="flex gap-2">
@@ -237,9 +255,9 @@
                     </div>
                 </div>
                 <!-- Fixed Height Container for History -->
-                <div id="history-container" class="relative bg-white bg-opacity-30 rounded-lg border border-gray-100 p-2">
-                    <!-- 높이를 h-[28rem] (약 450px)으로 늘려 5게임 이상 넉넉하게 보이게 수정 -->
-                    <div id="history-list" class="space-y-2 h-[28rem] overflow-y-auto custom-scrollbar pr-1">
+                <div id="history-container" class="relative bg-white bg-opacity-30 rounded-lg border border-gray-100 p-1 mb-2">
+                    <!-- 높이를 h-96 (24rem, 약 384px)으로 늘려 5~6게임이 충분히 보이도록 수정 -->
+                    <div id="history-list" class="space-y-1 h-96 overflow-y-auto custom-scrollbar pr-1">
                         <!-- History items will appear here -->
                         <div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400">
                             <i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i>
@@ -257,8 +275,31 @@
             </div>
         </div>
         
+        <!-- Google AdSense Placeholder -->
+        <!-- 치킨값 벌어보자! 🍗 -->
+        <div class="px-4 pb-2 shrink-0">
+            <div class="w-full bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center h-[90px] overflow-hidden relative">
+                <span class="text-xs text-gray-400 absolute text-center px-4">
+                    <i class="fas fa-ad mb-1 block opacity-50"></i>
+                    광고 영역 (ca-pub-코드 입력)
+                </span>
+                <!-- 실제 광고 코드 예시 (발급 후 주석 해제 및 ID 수정) -->
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6413625773978376"
+                    crossorigin="anonymous"></script>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                     data-ad-slot="XXXXXXXXXX"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+        </div>
+
         <!-- Footer -->
-        <div class="bg-white bg-opacity-50 p-4 text-center text-xs text-gray-500 border-t border-gray-100 shrink-0">
+        <div class="bg-white bg-opacity-50 p-2 text-center text-xs text-gray-500 border-t border-gray-100 shrink-0">
             <p class="font-bold text-gray-600 mb-1">Good Luck! 🍀</p>
             <p class="text-[10px] text-gray-400 flex items-center justify-center gap-1">
                 Created by 
@@ -383,13 +424,23 @@
                 winResults = JSON.parse(storedWinResults);
             }
 
-            // Calculate or load current round
+            // Calculate current round (Latest)
+            const latestRound = calculateCurrentRound();
+            
+            // Populate Select Options First (All available rounds)
+            populateRoundSelect(latestRound);
+
+            // Load saved round or use latest
             const storedRound = localStorage.getItem('lotto_current_round');
             if (storedRound) {
                 currentRound = parseInt(storedRound);
+                // Ensure stored round is valid (not greater than latest)
+                if(currentRound > latestRound) currentRound = latestRound;
             } else {
-                currentRound = calculateCurrentRound();
+                currentRound = latestRound;
             }
+            
+            // Set value after population
             roundInput.value = currentRound;
             updateRoundInfo(currentRound);
 
@@ -404,6 +455,17 @@
             const diffTime = Math.abs(today - startDate);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
             return Math.floor(diffDays / 7) + 1;
+        }
+
+        function populateRoundSelect(maxRound) {
+            roundInput.innerHTML = '';
+            for (let i = maxRound; i >= 1; i--) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                option.className = "text-gray-800"; // Ensure text is visible in dropdown
+                roundInput.appendChild(option);
+            }
         }
 
         // 회차에 따른 추첨 날짜 계산 및 표시
@@ -424,9 +486,7 @@
         // Round Input Listener
         roundInput.addEventListener('change', (e) => {
             let val = parseInt(e.target.value);
-            if (!val || val < 1) val = 1;
             currentRound = val;
-            roundInput.value = val;
             
             updateRoundInfo(val);
             
@@ -670,7 +730,7 @@
 
         function confirmClearHistory() {
             clearAllHistoryData();
-            generatedBallsArea.innerHTML = '<span class="text-gray-500 text-sm">버튼을 눌러 번호를 생성하세요</span>';
+            generatedBallsArea.innerHTML = '<span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>';
             currentNumbers = [];
             closeDeleteConfirmModal();
             showToast("모든 기록이 삭제되었습니다.");
@@ -989,6 +1049,7 @@
             
             // 1. 캐시 확인
             if (winResults[round]) {
+                localStorage.setItem('lotto_current_round', round); // Update last viewed round on fetch success (cached)
                 showModal();
                 const cachedData = winResults[round];
                 renderModalContent(cachedData);
@@ -1032,10 +1093,11 @@
             }
 
             try {
-                // 1. Proxy 제거 및 직접 호출 (CORS issue may occur in some envs, fallback logic handles it)
+                // 1. Proxy 제거 및 직접 호출 (요청하신 사항 반영)
                 const timestamp = new Date().getTime();
                 const targetUrl = `https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=${round}&_=${timestamp}`;
                 
+                // 직접 호출 시도
                 const response = await fetch(targetUrl);
                 
                 if (!response.ok) throw new Error('Network response was not ok');
@@ -1063,9 +1125,10 @@
                         bnusNo: lottoData.bnsWnNo
                     };
 
-                    // 3. 캐시 저장
+                    // 3. 캐시 저장 & 최근 조회 회차 업데이트
                     winResults[round] = mappedData;
                     localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
+                    localStorage.setItem('lotto_current_round', round); // Update last viewed round on fetch success
 
                     renderModalContent(mappedData);
                     
@@ -1079,7 +1142,7 @@
                 }
             } catch (e) {
                 console.warn("Lotto API Fetch Warning:", e);
-                showToast("실시간 정보를 가져올 수 없어 가상 결과로 대체합니다. (CORS 제한)", true);
+                showToast("데이터를 가져올 수 없어 가상 결과로 대체합니다. (CORS 등)", true);
                 
                 // Fallback to mock data
                 const winNumbers = new Set();
