@@ -9,8 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <!-- OCR Library (Tesseract.js) -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <!-- 실제 광고 코드 예시 (발급 후 주석 해제 및 ID 수정) -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6413625773978376" crossorigin="anonymous"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
@@ -278,6 +276,28 @@
         </div>
         
         <!-- Google AdSense Placeholder -->
+        <!-- 치킨값 벌어보자! 🍗 -->
+        <div class="px-4 pb-2 shrink-0">
+            <div class="w-full bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center h-[90px] overflow-hidden relative">
+                <span class="text-xs text-gray-400 absolute text-center px-4">
+                    <i class="fas fa-ad mb-1 block opacity-50"></i>
+                    광고 영역 (ca-pub-6413625773978376)
+                </span>
+                <!-- 실제 광고 코드 (발급 후 주석 해제) -->
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6413625773978376"
+                     crossorigin="anonymous"></script>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-6413625773978376"
+                     data-ad-slot="XXXXXXXXXX"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+        </div>
+
         <!-- Footer -->
         <div class="bg-white bg-opacity-50 p-2 text-center text-xs text-gray-500 border-t border-gray-100 shrink-0">
             <p class="font-bold text-gray-600 mb-1">Good Luck! 🍀</p>
@@ -407,17 +427,17 @@
             // Calculate current round (Latest)
             const latestRound = calculateCurrentRound();
             
-            // Populate Select Options First (All available rounds)
-            populateRoundSelect(latestRound);
+            // Populate Select Options First (All available rounds + 1 for future)
+            populateRoundSelect(latestRound + 1);
 
             // Load saved round or use latest
             const storedRound = localStorage.getItem('lotto_current_round');
             if (storedRound) {
                 currentRound = parseInt(storedRound);
-                // Ensure stored round is valid (not greater than latest)
-                if(currentRound > latestRound) currentRound = latestRound;
+                // Ensure stored round is valid (not greater than latest + 1)
+                if(currentRound > latestRound + 1) currentRound = latestRound + 1;
             } else {
-                currentRound = latestRound;
+                currentRound = latestRound + 1; // Default to next draw
             }
             
             // Set value after population
@@ -439,6 +459,7 @@
 
         function populateRoundSelect(maxRound) {
             roundInput.innerHTML = '';
+            // Add options up to next round
             for (let i = maxRound; i >= 1; i--) {
                 const option = document.createElement('option');
                 option.value = i;
@@ -710,7 +731,7 @@
 
         function confirmClearHistory() {
             clearAllHistoryData();
-            generatedBallsArea.innerHTML = '<span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>';
+            generatedBallsArea.innerHTML = '<span class="text-gray-500 text-sm">버튼을 눌러 번호를 생성하세요</span>';
             currentNumbers = [];
             closeDeleteConfirmModal();
             showToast("모든 기록이 삭제되었습니다.");
