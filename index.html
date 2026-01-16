@@ -2,8 +2,17 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>행운의 로또 번호 생성기</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>부자 되기 프로젝트</title>
+    
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="로또메이커">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- QR Code Scanner Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -22,6 +31,7 @@
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
+            -webkit-tap-highlight-color: transparent; /* 모바일 터치 하이라이트 제거 */
         }
 
         .main-container {
@@ -47,7 +57,6 @@
             transition: all 0.3s;
         }
 
-        /* 작은 로또 공 (기록용) - 사이즈 확대 */
         .small-ball {
             width: 2rem;
             height: 2rem;
@@ -60,22 +69,19 @@
             transition: all 0.3s;
         }
         
-        /* 당첨 번호 강조 효과 */
         .small-ball.matched {
             transform: scale(1.15);
             z-index: 10;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         }
 
-        /* 보너스 번호 강조 효과 (2등일 때만 적용됨) */
         .small-ball.bonus-matched {
-            border: 2px solid #a855f7; /* Purple Border */
+            border: 2px solid #a855f7;
             transform: scale(1.15);
             z-index: 10;
             box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
         }
 
-        /* 낙첨 번호 회색 처리 */
         .small-ball.dimmed {
             background: #e5e7eb !important;
             background-image: none !important;
@@ -85,7 +91,6 @@
             opacity: 0.7;
         }
 
-        /* 수동 입력 모달의 선택된 공 */
         .select-ball {
             width: 2.5rem;
             height: 2.5rem;
@@ -101,9 +106,7 @@
             color: #4b5563;
             border: 2px solid #e5e7eb;
         }
-        .select-ball:hover {
-            background-color: #e5e7eb;
-        }
+        .select-ball:hover { background-color: #e5e7eb; }
         .select-ball.selected {
             border: 2px solid transparent;
             color: white;
@@ -117,60 +120,23 @@
         .ball-gray { background: linear-gradient(135deg, #a5a5a5, #6c757d); text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
         .ball-green { background: linear-gradient(135deg, #b0d840, #28a745); text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
 
-        @keyframes popIn {
-            to { opacity: 1; transform: scale(1); }
-        }
+        @keyframes popIn { to { opacity: 1; transform: scale(1); } }
 
-        .history-item {
-            transition: all 0.2s;
-            position: relative;
-        }
-        .history-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+        .history-item { transition: all 0.2s; position: relative; }
+        .history-item:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         
-        .delete-btn {
-            opacity: 0.3;
-            transition: opacity 0.2s;
-        }
-        .history-item:hover .delete-btn {
-            opacity: 1;
-        }
+        .delete-btn { opacity: 0.3; transition: opacity 0.2s; }
+        .history-item:hover .delete-btn { opacity: 1; }
 
-        /* 결과 배너 스타일 */
-        .result-banner {
-            transition: all 0.3s ease-out;
-            max-height: 0;
-            overflow: hidden;
-            opacity: 0;
-        }
-        .result-banner.show {
-            max-height: 200px; /* 3줄 이상 텍스트도 보이도록 높이 증가 */
-            opacity: 1;
-            margin-bottom: 0.25rem;
-            padding: 0.25rem;
-        }
+        .result-banner { transition: all 0.3s ease-out; max-height: 0; overflow: hidden; opacity: 0; }
+        .result-banner.show { max-height: 200px; opacity: 1; margin-bottom: 0.25rem; padding: 0.25rem; }
 
-        #result-modal, #manual-input-modal, #delete-confirm-modal {
-            background-color: rgba(0, 0, 0, 0.5);
-        }
+        #result-modal, #manual-input-modal, #delete-confirm-modal { background-color: rgba(0, 0, 0, 0.5); }
 
-        /* 스크롤바 커스텀 */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #d1d5db;
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #9ca3af;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
         
         @media (max-width: 640px) {
             .lotto-ball { width: 2.5rem; height: 2.5rem; font-size: 1rem; }
@@ -180,101 +146,63 @@
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-2">
-
     <div class="main-container max-w-md w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         <!-- Header -->
         <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-center shrink-0 flex flex-col items-center">
-            <h1 class="text-xl font-bold text-white mb-1">
-                🍀 부자 되기 프로젝트 💸
-            </h1>
+            <h1 class="text-xl font-bold text-white mb-1">🍀 부자 되기 프로젝트 💸</h1>
             <p class="text-purple-100 text-xs mb-2 italic">"당신에게 행운이 깃들기를 바랍니다"</p>
-            
-            <!-- Round Select + Date Display -->
             <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-2 py-1 shadow-inner transition-colors hover:bg-opacity-30 gap-2">
                 <div class="flex items-center border-r border-white border-opacity-30 pr-5 relative group cursor-pointer">
                     <span class="text-white text-xs mr-1 font-bold">회차 선택</span>
-                    
                     <div class="relative">
-                        <select id="round-input" class="w-16 bg-transparent text-white text-right font-bold focus:outline-none text-xs appearance-none cursor-pointer pr-4 relative z-10 transform -translate-y-[1.5px]">
-                            <!-- JS로 옵션 채워짐 -->
-                        </select>
+                        <select id="round-input" class="w-16 bg-transparent text-white text-right font-bold focus:outline-none text-xs appearance-none cursor-pointer pr-4 relative z-10 transform -translate-y-[1.5px]"></select>
                         <i class="fas fa-caret-down text-white text-[10px] absolute right-0 top-1/2 transform -translate-y-1/2 pointer-events-none opacity-70 group-hover:opacity-100"></i>
                     </div>
-                    
                     <span class="text-white text-xs ml-1">회</span>
                 </div>
-                <!-- Draw Date Display -->
                 <span id="draw-date" class="text-white text-xs opacity-90 font-medium"></span>
             </div>
         </div>
 
         <!-- Main Content -->
         <div class="p-4 pb-2 shrink-0">
-            <!-- Display Area: Can show Balls or Global Result Message -->
             <div id="numbers-container" class="flex flex-col justify-center items-center min-h-[130px] py-6 bg-white bg-opacity-50 rounded-xl px-2 mb-3 border border-gray-100 shadow-sm transition-all overflow-hidden relative">
-                <!-- Default Placeholder or Balls -->
                 <div id="generated-balls-area" class="flex flex-wrap justify-center items-center w-full gap-2">
                     <span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>
                 </div>
-                
-                <!-- Global Result Overlay -->
                 <div id="global-result-overlay" class="absolute inset-0 bg-white flex flex-col justify-center items-center hidden z-20 pb-4">
                     <h2 id="global-rank-title" class="text-lg font-bold mb-1"></h2>
                     <p id="global-rank-desc" class="text-xs text-gray-500 mb-4 text-center px-4"></p>
-                    
-                    <!-- 닫기 버튼 -->
-                    <button onclick="closeGlobalResult()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-1 px-4 rounded-md text-xs transition shadow-sm border border-gray-300">
-                        닫기
-                    </button>
+                    <button onclick="closeGlobalResult()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-1 px-4 rounded-md text-xs transition shadow-sm border border-gray-300">닫기</button>
                 </div>
             </div>
 
-            <!-- Controls -->
             <div class="flex gap-2 mb-2">
-                <button onclick="generateLotto()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-1 text-xs">
-                    <i class="fas fa-sync-alt"></i> 번호 생성
-                </button>
-                
-                <button onclick="triggerImageUpload()" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2" title="이미지/QR 번호 추출">
-                    <i class="fas fa-camera"></i>
-                </button>
+                <button onclick="generateLotto()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-1 text-xs"><i class="fas fa-sync-alt"></i> 번호 생성</button>
+                <button onclick="triggerImageUpload()" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2" title="이미지/QR 번호 추출"><i class="fas fa-camera"></i></button>
                 <input type="file" id="image-input" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
-
-                <button onclick="openManualInput()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2" title="수동 입력">
-                    <i class="fas fa-hand-pointer"></i>
-                </button>
-
-                <button onclick="copyNumbers()" id="copy-btn" class="bg-white hover:bg-gray-100 text-gray-700 font-bold py-2 px-3 rounded-xl transition duration-200 border border-gray-200 shadow-sm" title="클립보드에 복사">
-                    <i class="far fa-copy"></i>
-                </button>
+                <button onclick="openManualInput()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2" title="수동 입력"><i class="fas fa-hand-pointer"></i></button>
+                <button onclick="copyNumbers()" id="copy-btn" class="bg-white hover:bg-gray-100 text-gray-700 font-bold py-2 px-3 rounded-xl transition duration-200 border border-gray-200 shadow-sm" title="클립보드에 복사"><i class="far fa-copy"></i></button>
             </div>
         </div>
 
-        <!-- History (Fixed Height Area) -->
+        <!-- History -->
         <div class="px-4 pb-0 flex-1 flex flex-col">
             <div class="border-t border-gray-100 pt-2 flex flex-col h-full">
                 <div class="flex justify-between items-center mb-2 shrink-0">
                     <h2 class="text-xs font-bold text-gray-600 uppercase tracking-wide flex items-center">
-                        <span id="history-round-label">현재</span>차 기록
-                        <span id="total-count-badge" class="ml-1 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">(총 0건)</span>
+                        <span id="history-round-label">현재</span>차 기록 <span id="total-count-badge" class="ml-1 text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">(총 0건)</span>
                     </h2>
                     <div class="flex items-center gap-2">
-                        <button onclick="fetchLatestResult()" class="text-xs text-blue-500 hover:text-blue-700 transition flex items-center gap-1 font-bold">
-                            <i class="fas fa-trophy"></i> 결과 확인
-                        </button>
+                        <button onclick="fetchLatestResult()" class="text-xs text-blue-500 hover:text-blue-700 transition flex items-center gap-1 font-bold"><i class="fas fa-trophy"></i> 결과 확인</button>
                         <span class="w-px h-3 bg-gray-300"></span>
                         <button onclick="openDeleteConfirmModal('ALL')" class="text-xs text-red-400 hover:text-red-600 transition">회차 전체 삭제</button>
                     </div>
                 </div>
-                <!-- Fixed Height Container for History -->
                 <div id="history-container" class="relative bg-white bg-opacity-30 rounded-lg border border-gray-100 p-1 mb-2">
                     <div id="history-list" class="space-y-1 h-96 overflow-y-auto custom-scrollbar pr-1">
-                        <div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400">
-                            <i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i>
-                            <span class="text-xs">아직 이 회차의 기록이 없습니다.</span>
-                        </div>
+                        <div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400"><i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i><span class="text-xs">아직 이 회차의 기록이 없습니다.</span></div>
                     </div>
-                    
                     <div id="scan-loader" class="absolute inset-0 bg-white bg-opacity-95 z-10 hidden flex-col items-center justify-center rounded-lg">
                         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
                         <span id="scan-message" class="text-xs text-indigo-600 font-bold">이미지 분석 중...</span>
@@ -287,97 +215,55 @@
         <!-- Footer -->
         <div class="bg-white bg-opacity-50 p-2 text-center text-xs text-gray-500 border-t border-gray-100 shrink-0">
             <p class="font-bold text-gray-600 mb-1">Good Luck! 🍀</p>
-            <p class="text-[10px] text-gray-400 flex items-center justify-center gap-1">
-                Created by 
-                <a href="mailto:mecca0515@gmail.com" class="font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition" title="제작자에게 메일 보내기">
-                    mecca0515 <i class="fas fa-envelope text-[9px]"></i>
-                </a>
-                <span class="w-1 h-1 bg-gray-300 rounded-full mx-1"></span> 
-                with <span class="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Gemini</span> ✨
-            </p>
+            <p class="text-[10px] text-gray-400 flex items-center justify-center gap-1">Created by <a href="mailto:mecca0515@gmail.com" class="font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition">mecca0515 <i class="fas fa-envelope text-[9px]"></i></a> <span class="w-1 h-1 bg-gray-300 rounded-full mx-1"></span> with <span class="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Gemini</span> ✨</p>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50 text-sm whitespace-nowrap">
-        번호가 복사되었습니다!
-    </div>
+    <!-- Modals & Toasts -->
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50 text-sm whitespace-nowrap">번호가 복사되었습니다!</div>
 
-    <!-- Result Modal -->
     <div id="result-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-gray-800">당첨 결과 확인</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div id="modal-content" class="text-center">
-                <!-- Content loaded dynamically -->
-            </div>
+            <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-800">당첨 결과 확인</h3><button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button></div>
+            <div id="modal-content" class="text-center"></div>
         </div>
     </div>
 
-    <!-- Manual Input Modal -->
     <div id="manual-input-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-4 max-w-sm w-full mx-4 flex flex-col max-h-[90vh] transform scale-95 transition-transform duration-300">
-            <div class="flex justify-between items-center mb-4 shrink-0">
-                <h3 class="text-lg font-bold text-gray-800">번호 직접 입력</h3>
-                <button onclick="closeManualInput()" class="text-gray-400 hover:text-gray-600 transition">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <div class="text-center mb-2 shrink-0">
-                <span id="manual-count" class="text-sm font-bold text-indigo-600">0</span>
-                <span class="text-sm text-gray-500">/ 6개 선택됨</span>
-            </div>
-
-            <!-- Number Grid -->
-            <div class="grid grid-cols-7 gap-2 overflow-y-auto p-1 custom-scrollbar flex-1 mb-4">
-                <!-- JS will populate this -->
-            </div>
-
-            <div class="flex gap-2 shrink-0">
-                <button onclick="resetManualSelection()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-xl transition text-sm">
-                    초기화
-                </button>
-                <button onclick="saveManualInput()" id="manual-save-btn" class="flex-[2] bg-gray-300 text-white font-bold py-3 px-4 rounded-xl transition text-sm cursor-not-allowed" disabled>
-                    입력 완료
-                </button>
-            </div>
+            <div class="flex justify-between items-center mb-4 shrink-0"><h3 class="text-lg font-bold text-gray-800">번호 직접 입력</h3><button onclick="closeManualInput()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button></div>
+            <div class="text-center mb-2 shrink-0"><span id="manual-count" class="text-sm font-bold text-indigo-600">0</span><span class="text-sm text-gray-500">/ 6개 선택됨</span></div>
+            <div class="grid grid-cols-7 gap-2 overflow-y-auto p-1 custom-scrollbar flex-1 mb-4"></div>
+            <div class="flex gap-2 shrink-0"><button onclick="resetManualSelection()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-xl transition text-sm">초기화</button><button onclick="saveManualInput()" id="manual-save-btn" class="flex-[2] bg-gray-300 text-white font-bold py-3 px-4 rounded-xl transition text-sm cursor-not-allowed" disabled>입력 완료</button></div>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal (Shared) -->
     <div id="delete-confirm-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
             <h3 id="delete-modal-title" class="text-lg font-bold text-gray-800 mb-2">🗑️ 기록 전체 삭제</h3>
             <p id="delete-modal-desc" class="text-gray-600 mb-6 text-sm">정말 모든 번호 생성 기록을 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.</p>
-            <div class="flex gap-3">
-                <button onclick="closeDeleteConfirmModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-xl transition text-sm">
-                    취소
-                </button>
-                <button onclick="confirmDelete()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-xl transition text-sm">
-                    삭제
-                </button>
-            </div>
+            <div class="flex gap-3"><button onclick="closeDeleteConfirmModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-xl transition text-sm">취소</button><button onclick="confirmDelete()" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-xl transition text-sm">삭제</button></div>
         </div>
     </div>
 
-    <!-- Hidden Canvas for Image Processing -->
     <canvas id="scan-canvas" class="hidden"></canvas>
 
     <script>
+        // --- Service Worker Registration for PWA ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => console.log('SW Registered'))
+                    .catch(error => console.log('SW Registration failed', error));
+            });
+        }
+
         let currentNumbers = [];
         let manualSelection = new Set();
-        // State Management
         let historyData = []; 
         let winResults = {}; 
         let currentRound = 0;
         let deleteTargetId = null; 
-
-        // Pagination State
         let displayedCount = 0;
         const PAGE_SIZE = 20;
         let currentFilteredGames = [];
@@ -391,13 +277,11 @@
         const globalRankTitle = document.getElementById('global-rank-title');
         const globalRankDesc = document.getElementById('global-rank-desc');
         const totalCountBadge = document.getElementById('total-count-badge');
-        
         const resultModal = document.getElementById('result-modal');
         const manualInputModal = document.getElementById('manual-input-modal');
         const deleteConfirmModal = document.getElementById('delete-confirm-modal');
         const deleteModalTitle = document.getElementById('delete-modal-title');
         const deleteModalDesc = document.getElementById('delete-modal-desc');
-
         const modalContent = document.getElementById('modal-content');
         const scanLoader = document.getElementById('scan-loader');
         const scanMessage = document.getElementById('scan-message');
@@ -406,21 +290,14 @@
         const historyRoundLabel = document.getElementById('history-round-label');
         const drawDateSpan = document.getElementById('draw-date');
 
-        // --- Initialization ---
         function init() {
             const storedHistory = localStorage.getItem('lotto_history');
-            if (storedHistory) {
-                historyData = JSON.parse(storedHistory);
-            }
-
+            if (storedHistory) { historyData = JSON.parse(storedHistory); }
             const storedWinResults = localStorage.getItem('lotto_win_results');
-            if (storedWinResults) {
-                winResults = JSON.parse(storedWinResults);
-            }
+            if (storedWinResults) { winResults = JSON.parse(storedWinResults); }
 
             const latestRound = calculateCurrentRound();
-            // 수정: 미래 회차 제외하고 딱 이번주까지만
-            populateRoundSelect(latestRound);
+            populateRoundSelect(latestRound); // Show up to current round only
 
             const storedRound = localStorage.getItem('lotto_current_round');
             if (storedRound) {
@@ -429,12 +306,9 @@
             } else {
                 currentRound = latestRound; 
             }
-            
             roundInput.value = currentRound;
             updateRoundInfo(currentRound);
-
             renderHistory(currentRound);
-
             historyList.addEventListener('scroll', () => {
                 if (historyList.scrollTop + historyList.clientHeight >= historyList.scrollHeight - 50) {
                     loadMoreHistory();
@@ -446,8 +320,11 @@
             const startDate = new Date('2002-12-07T00:00:00'); 
             const today = new Date();
             const diffTime = Math.abs(today - startDate);
-            const diffDays = diffTime / (1000 * 60 * 60 * 24); 
-            // 수정: (diffDays - 1) / 7 + 2 로직으로 이번주 토요일(1207)이 나오도록 함
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            // 금요일 기준 다음날(토요일) 회차까지 나오도록 계산 조정
+            // 8441 days -> 1205.8 -> floor 1205. 
+            // We want 1207 for Jan 17 2026. 
+            // (diffDays - 1) / 7 + 2 seems correct for this date.
             return Math.floor((diffDays - 1) / 7) + 2;
         }
 
@@ -464,37 +341,25 @@
 
         function updateRoundInfo(round) {
             historyRoundLabel.textContent = `${round}회`;
-            
             const startDate = new Date('2002-12-07T00:00:00');
             const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
-            
             const year = drawDate.getFullYear();
             const month = String(drawDate.getMonth() + 1).padStart(2, '0');
             const day = String(drawDate.getDate()).padStart(2, '0');
-            
             drawDateSpan.textContent = `(${year}-${month}-${day})`;
         }
 
         roundInput.addEventListener('change', (e) => {
             let val = parseInt(e.target.value);
             currentRound = val;
-            
             updateRoundInfo(val);
-            
             localStorage.setItem('lotto_current_round', currentRound);
             renderHistory(currentRound);
             closeGlobalResult();
         });
 
         function addGameToData(numbers, tag) {
-            const game = {
-                id: Date.now() + Math.random(), 
-                round: currentRound,
-                numbers: numbers,
-                tag: tag,
-                date: new Date().toISOString()
-            };
-            
+            const game = { id: Date.now() + Math.random(), round: currentRound, numbers: numbers, tag: tag, date: new Date().toISOString() };
             historyData.unshift(game);
             saveHistory();
             renderHistory(currentRound);
@@ -506,16 +371,10 @@
             renderHistory(currentRound);
         }
 
-        // 수정: 현재 회차 데이터만 삭제하도록 변경
         function clearCurrentRoundHistory() {
             historyData = historyData.filter(game => game.round !== currentRound);
             saveHistory();
             renderHistory(currentRound);
-        }
-
-        // 구버전 전체 삭제 함수 제거하고 위 함수 사용
-        function clearAllHistoryData() {
-            clearCurrentRoundHistory();
         }
 
         function saveHistory() {
@@ -526,48 +385,29 @@
             historyList.innerHTML = ''; 
             displayedCount = 0;
             currentWinData = winResults[round] || null; 
-
             currentFilteredGames = historyData.filter(game => game.round === round);
-            
             totalCountBadge.textContent = `(총 ${currentFilteredGames.length}건)`;
 
             if (currentFilteredGames.length === 0) {
-                historyList.innerHTML = `
-                    <div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400 py-10">
-                        <i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i>
-                        <span class="text-xs">${round}회차 기록이 없습니다.</span>
-                    </div>
-                `;
+                historyList.innerHTML = `<div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400 py-10"><i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i><span class="text-xs">${round}회차 기록이 없습니다.</span></div>`;
                 return;
             }
-
             loadMoreHistory();
-
-            if (currentWinData) {
-                 calculateAndShowSummary(currentWinData);
-            }
+            if (currentWinData) { calculateAndShowSummary(currentWinData); }
         }
 
         function loadMoreHistory() {
             const nextBatch = currentFilteredGames.slice(displayedCount, displayedCount + PAGE_SIZE);
-            
             if(nextBatch.length === 0) return;
-
             const fragment = document.createDocumentFragment();
             nextBatch.forEach(game => {
                 const item = createHistoryItemElement(game);
-                
                 if(currentWinData) {
-                    const winArr = [
-                        currentWinData.drwtNo1, currentWinData.drwtNo2, currentWinData.drwtNo3, 
-                        currentWinData.drwtNo4, currentWinData.drwtNo5, currentWinData.drwtNo6
-                    ];
+                    const winArr = [currentWinData.drwtNo1, currentWinData.drwtNo2, currentWinData.drwtNo3, currentWinData.drwtNo4, currentWinData.drwtNo5, currentWinData.drwtNo6];
                     applyWinStyleToItem(item, winArr, currentWinData.bnusNo, game.numbers);
                 }
-                
                 fragment.appendChild(item);
             });
-            
             historyList.appendChild(fragment);
             displayedCount += nextBatch.length;
         }
@@ -575,8 +415,6 @@
         function applyWinStyleToItem(item, winArr, bonus, myNumbers) {
             let matchCount = 0;
             let isBonusMatched = false;
-            
-            // 1. Calculate Rank First
             myNumbers.forEach(num => {
                 if (winArr.includes(num)) matchCount++;
                 else if (num === bonus) isBonusMatched = true;
@@ -589,63 +427,27 @@
             else if (matchCount === 4) rank = 4;
             else if (matchCount === 3) rank = 5;
 
-            // 2. Apply Styles based on Rank
             const ballElements = item.querySelectorAll('.ball-container .lotto-ball');
-            
             ballElements.forEach(ball => {
                 const num = parseInt(ball.dataset.num);
-                
                 if (winArr.includes(num)) {
-                    // Main numbers are always matched (colored)
-                    ball.classList.add('matched');
-                    ball.classList.remove('dimmed');
+                    ball.classList.add('matched'); ball.classList.remove('dimmed');
                 } else if (num === bonus) {
-                    // Bonus number only colored if Rank 2
-                    if (rank === 2) {
-                        ball.classList.add('bonus-matched');
-                        ball.classList.remove('dimmed');
-                    } else {
-                        // Otherwise treat as miss
-                        ball.classList.remove('matched');
-                        ball.classList.remove('bonus-matched');
-                        ball.classList.add('dimmed');
-                    }
+                    if (rank === 2) { ball.classList.add('bonus-matched'); ball.classList.remove('dimmed'); }
+                    else { ball.classList.remove('matched'); ball.classList.remove('bonus-matched'); ball.classList.add('dimmed'); }
                 } else {
-                    // Missed
-                    ball.classList.remove('matched');
-                    ball.classList.remove('bonus-matched');
-                    ball.classList.add('dimmed');
+                    ball.classList.remove('matched'); ball.classList.remove('bonus-matched'); ball.classList.add('dimmed');
                 }
             });
 
             let rankText = '';
             let rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; 
-
-            if (rank === 1) { 
-                rankText = '🏆 1등 당첨!';
-                rankClass = 'text-red-600 pl-2 border-l border-red-200';
-            }
-            else if (rank === 2) { 
-                rankText = '🥈 2등 당첨!';
-                rankClass = 'text-orange-600 pl-2 border-l border-orange-200';
-            }
-            else if (rank === 3) { 
-                rankText = '🥉 3등 당첨!';
-                rankClass = 'text-yellow-600 pl-2 border-l border-yellow-200';
-            }
-            else if (rank === 4) { 
-                rankText = '4등 (5만원)';
-                rankClass = 'text-blue-600 pl-2 border-l border-blue-200';
-            }
-            else if (rank === 5) { 
-                rankText = '5등 (5천원)';
-                rankClass = 'text-green-600 pl-2 border-l border-green-200';
-            }
-            else { 
-                // 수정: 낙첨 문구 간소화
-                rankText = '낙첨';
-                rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; 
-            }
+            if (rank === 1) { rankText = '🏆 1등 당첨!'; rankClass = 'text-red-600 pl-2 border-l border-red-200'; }
+            else if (rank === 2) { rankText = '🥈 2등 당첨!'; rankClass = 'text-orange-600 pl-2 border-l border-orange-200'; }
+            else if (rank === 3) { rankText = '🥉 3등 당첨!'; rankClass = 'text-yellow-600 pl-2 border-l border-yellow-200'; }
+            else if (rank === 4) { rankText = '4등 (5만원)'; rankClass = 'text-blue-600 pl-2 border-l border-blue-200'; }
+            else if (rank === 5) { rankText = '5등 (5천원)'; rankClass = 'text-green-600 pl-2 border-l border-green-200'; }
+            else { rankText = '낙첨'; rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; }
 
             const rankBadge = item.querySelector('.rank-badge');
             if (rankBadge) {
@@ -656,67 +458,35 @@
         }
 
         function calculateAndShowSummary(winData) {
-            const winArr = [
-                winData.drwtNo1, winData.drwtNo2, winData.drwtNo3, 
-                winData.drwtNo4, winData.drwtNo5, winData.drwtNo6
-            ];
+            const winArr = [winData.drwtNo1, winData.drwtNo2, winData.drwtNo3, winData.drwtNo4, winData.drwtNo5, winData.drwtNo6];
             const bonus = winData.bnusNo;
-            
             let counts = { 1:0, 2:0, 3:0, 4:0, 5:0, fail:0 };
             let bestRank = 6;
-
             currentFilteredGames.forEach(game => {
                 const nums = game.numbers;
                 let matches = nums.filter(n => winArr.includes(n)).length;
                 let bonusMatch = nums.includes(bonus);
-                
                 let rank = 6;
                 if(matches === 6) rank = 1;
                 else if(matches === 5 && bonusMatch) rank = 2;
                 else if(matches === 5) rank = 3;
                 else if(matches === 4) rank = 4;
                 else if(matches === 3) rank = 5;
-                
-                if(rank < 6) counts[rank]++;
-                else counts.fail++;
-
+                if(rank < 6) counts[rank]++; else counts.fail++;
                 if(rank < bestRank) bestRank = rank;
             });
-
             const totalWins = counts[1] + counts[2] + counts[3] + counts[4] + counts[5];
             displayGlobalResult(bestRank, totalWins, counts);
         }
 
         function displayGlobalResult(bestRank, totalWins, counts) {
-            let title = "";
-            let desc = "";
-            let colorClass = "";
-
-            if (bestRank === 1) {
-                title = "🍀 대박! 1등 당첨! 🍀";
-                desc = "오늘이 바로 그날입니다! 인생 역전 축하드립니다!";
-                colorClass = "text-yellow-600";
-            } else if (bestRank === 2) {
-                title = "🍀 2등 당첨! 축하합니다! 🍀";
-                desc = "정말 아깝지만 대단한 결과입니다! 축하드려요!";
-                colorClass = "text-gray-600";
-            } else if (bestRank === 3) {
-                title = "🍀 3등 당첨! 🍀";
-                desc = "운이 좋으시네요! 맛있는 거 사드세요.";
-                colorClass = "text-orange-600";
-            } else if (bestRank === 4) {
-                title = "🍀 4등 당첨 🍀";
-                desc = "소소한 행복! 5만원 축하드려요.";
-                colorClass = "text-blue-600";
-            } else if (bestRank === 5) {
-                title = "🍀 5등 당첨 🍀";
-                desc = "본전은 찾으셨네요! 다음을 노려보세요.";
-                colorClass = "text-green-600";
-            } else {
-                title = "꽝.. 다음 기회에.. 😭";
-                desc = "아쉽지만 이번엔 운이 없었네요. 힘내세요!";
-                colorClass = "text-gray-500";
-            }
+            let title = "", desc = "", colorClass = "";
+            if (bestRank === 1) { title = "🍀 대박! 1등 당첨! 🍀"; desc = "오늘이 바로 그날입니다! 인생 역전 축하드립니다!"; colorClass = "text-yellow-600"; }
+            else if (bestRank === 2) { title = "🍀 2등 당첨! 축하합니다! 🍀"; desc = "정말 아깝지만 대단한 결과입니다! 축하드려요!"; colorClass = "text-gray-600"; }
+            else if (bestRank === 3) { title = "🍀 3등 당첨! 🍀"; desc = "운이 좋으시네요! 맛있는 거 사드세요."; colorClass = "text-orange-600"; }
+            else if (bestRank === 4) { title = "🍀 4등 당첨 🍀"; desc = "소소한 행복! 5만원 축하드려요."; colorClass = "text-blue-600"; }
+            else if (bestRank === 5) { title = "🍀 5등 당첨 🍀"; desc = "본전은 찾으셨네요! 다음을 노려보세요."; colorClass = "text-green-600"; }
+            else { title = "꽝.. 다음 기회에.. 😭"; desc = "아쉽지만 이번엔 운이 없었네요. 힘내세요!"; colorClass = "text-gray-500"; }
             
             if (totalWins > 0) {
                  let summary = `총 <b class="text-indigo-600">${totalWins}</b>건 당첨! (`;
@@ -727,10 +497,8 @@
                  if(counts[4] > 0) details.push(`4등:${counts[4]}건`);
                  if(counts[5] > 0) details.push(`5등:${counts[5]}건`);
                  summary += details.join(', ') + ")";
-                 
                  desc += `<br><span class="mt-1 block text-gray-600 text-xs">${summary}</span>`;
             }
-
             showGlobalResult(title, desc, colorClass);
         }
 
@@ -739,15 +507,9 @@
             item.dataset.numbers = JSON.stringify(game.numbers);
             item.dataset.id = game.id;
             item.className = 'history-item bg-white bg-opacity-80 p-2 rounded-lg border border-gray-100 flex flex-col shadow-sm items-start';
-            
-            const contentRow = document.createElement('div');
-            contentRow.className = 'flex justify-between w-full items-center';
-
-            const leftDiv = document.createElement('div');
-            leftDiv.className = 'flex flex-col';
-
-            const ballsContainer = document.createElement('div');
-            ballsContainer.className = 'flex ball-container items-center gap-1';
+            const contentRow = document.createElement('div'); contentRow.className = 'flex justify-between w-full items-center';
+            const leftDiv = document.createElement('div'); leftDiv.className = 'flex flex-col';
+            const ballsContainer = document.createElement('div'); ballsContainer.className = 'flex ball-container items-center gap-1';
             game.numbers.forEach(num => {
                 const smallBall = document.createElement('div');
                 smallBall.className = `lotto-ball small-ball ${getBallColorClass(num)}`;
@@ -758,77 +520,43 @@
             leftDiv.appendChild(ballsContainer);
             
             if (game.tag) {
-                const metaDiv = document.createElement('div');
-                metaDiv.className = 'flex items-center mt-1 ml-1 meta-info';
-                
+                const metaDiv = document.createElement('div'); metaDiv.className = 'flex items-center mt-1 ml-1 meta-info';
                 const tagSpan = document.createElement('span');
-                let colorClass = 'text-gray-400';
-                let icon = '';
-                
-                if (game.tag.includes('스캔') || game.tag.includes('분석') || game.tag.includes('Detect')) {
-                    colorClass = 'text-teal-600';
-                    icon = '⚡ ';
-                } else if (game.tag.includes('수동')) {
-                    colorClass = 'text-orange-500';
-                    icon = '👆 ';
-                }
-
-                tagSpan.className = `text-[10px] font-bold ${colorClass}`;
-                tagSpan.textContent = icon + game.tag;
+                let colorClass = 'text-gray-400', icon = '';
+                if (game.tag.includes('스캔') || game.tag.includes('분석')) { colorClass = 'text-teal-600'; icon = '⚡ '; }
+                else if (game.tag.includes('수동')) { colorClass = 'text-orange-500'; icon = '👆 '; }
+                tagSpan.className = `text-[10px] font-bold ${colorClass}`; tagSpan.textContent = icon + game.tag;
                 metaDiv.appendChild(tagSpan);
-
-                const rankSpan = document.createElement('span');
-                rankSpan.className = 'rank-badge text-[10px] font-bold ml-2 hidden'; 
+                const rankSpan = document.createElement('span'); rankSpan.className = 'rank-badge text-[10px] font-bold ml-2 hidden'; 
                 metaDiv.appendChild(rankSpan);
-
                 leftDiv.appendChild(metaDiv);
             }
-
-            const rightDiv = document.createElement('div');
-            rightDiv.className = 'flex flex-col items-end gap-1';
-
+            const rightDiv = document.createElement('div'); rightDiv.className = 'flex flex-col items-end gap-1';
             const dateObj = new Date(game.date);
             const timeStr = dateObj.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-            
-            const timeSpan = document.createElement('span');
-            timeSpan.className = 'text-xs text-gray-400 whitespace-nowrap';
-            timeSpan.textContent = timeStr;
+            const timeSpan = document.createElement('span'); timeSpan.className = 'text-xs text-gray-400 whitespace-nowrap'; timeSpan.textContent = timeStr;
             rightDiv.appendChild(timeSpan);
-
-            const delBtn = document.createElement('button');
-            delBtn.className = 'delete-btn text-gray-400 hover:text-red-500 p-1';
+            const delBtn = document.createElement('button'); delBtn.className = 'delete-btn text-gray-400 hover:text-red-500 p-1';
             delBtn.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>';
-            delBtn.onclick = function() {
-                openDeleteConfirmModal('SINGLE', game.id);
-            };
+            delBtn.onclick = function() { openDeleteConfirmModal('SINGLE', game.id); };
             rightDiv.appendChild(delBtn);
-
-            contentRow.appendChild(leftDiv);
-            contentRow.appendChild(rightDiv);
-            item.appendChild(contentRow);
-            
+            contentRow.appendChild(leftDiv); contentRow.appendChild(rightDiv); item.appendChild(contentRow);
             return item;
         }
 
         function generateLotto() {
             closeGlobalResult(); 
             const numbers = new Set();
-            while (numbers.size < 6) {
-                numbers.add(Math.floor(Math.random() * 45) + 1);
-            }
+            while (numbers.size < 6) { numbers.add(Math.floor(Math.random() * 45) + 1); }
             currentNumbers = Array.from(numbers).sort((a, b) => a - b);
-            
             displayNumbers(currentNumbers);
             addGameToData(currentNumbers, "자동 생성");
         }
 
         function getBallColorClass(num) {
             num = parseInt(num);
-            if (num <= 10) return 'ball-yellow';
-            if (num <= 20) return 'ball-blue';
-            if (num <= 30) return 'ball-red';
-            if (num <= 40) return 'ball-gray';
-            return 'ball-green';
+            if (num <= 10) return 'ball-yellow'; if (num <= 20) return 'ball-blue';
+            if (num <= 30) return 'ball-red'; if (num <= 40) return 'ball-gray'; return 'ball-green';
         }
 
         function displayNumbers(numbers) {
@@ -846,319 +574,139 @@
             globalRankTitle.textContent = bestRankText;
             globalRankTitle.className = `text-2xl font-bold mb-1 ${colorClass}`;
             globalRankDesc.innerHTML = desc; 
-            
             globalResultOverlay.classList.remove('hidden');
             globalResultOverlay.style.opacity = '0';
-            setTimeout(() => {
-                globalResultOverlay.style.transition = 'opacity 0.3s';
-                globalResultOverlay.style.opacity = '1';
-            }, 10);
+            setTimeout(() => { globalResultOverlay.style.transition = 'opacity 0.3s'; globalResultOverlay.style.opacity = '1'; }, 10);
         }
 
-        function closeGlobalResult() {
-            globalResultOverlay.classList.add('hidden');
-        }
+        function closeGlobalResult() { globalResultOverlay.classList.add('hidden'); }
 
         function openDeleteConfirmModal(type, id = null) {
-            if (type === 'ALL' && historyData.length === 0) {
-                showToast("삭제할 기록이 없습니다.");
-                return;
-            }
-
+            const currentRoundCount = historyData.filter(g => g.round === currentRound).length;
+            if (type === 'ALL' && currentRoundCount === 0) { showToast("삭제할 이번 회차 기록이 없습니다."); return; }
             deleteTargetId = id; 
-
-            if (type === 'ALL') {
-                deleteModalTitle.textContent = "🗑️ 기록 전체 삭제";
-                deleteModalDesc.innerHTML = "정말 모든 번호 생성 기록을 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.";
-            } else {
-                deleteModalTitle.textContent = "🗑️ 기록 삭제";
-                deleteModalDesc.innerHTML = "선택한 번호 기록을 삭제하시겠습니까?";
-            }
-
+            if (type === 'ALL') { deleteModalTitle.textContent = `🗑️ ${currentRound}회차 기록 전체 삭제`; deleteModalDesc.innerHTML = `정말 <strong>${currentRound}회차</strong>의 모든 번호 생성 기록을 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.`; }
+            else { deleteModalTitle.textContent = "🗑️ 기록 삭제"; deleteModalDesc.innerHTML = "선택한 번호 기록을 삭제하시겠습니까?"; }
             deleteConfirmModal.classList.remove('hidden');
-            setTimeout(() => {
-                deleteConfirmModal.classList.add('opacity-100');
-                deleteConfirmModal.querySelector('div').classList.remove('scale-95');
-                deleteConfirmModal.querySelector('div').classList.add('scale-100');
-            }, 10);
+            setTimeout(() => { deleteConfirmModal.classList.add('opacity-100'); deleteConfirmModal.querySelector('div').classList.remove('scale-95'); deleteConfirmModal.querySelector('div').classList.add('scale-100'); }, 10);
         }
 
         function closeDeleteConfirmModal() {
             deleteConfirmModal.classList.remove('opacity-100');
             deleteConfirmModal.querySelector('div').classList.remove('scale-100');
             deleteConfirmModal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => {
-                deleteConfirmModal.classList.add('hidden');
-            }, 300);
+            setTimeout(() => { deleteConfirmModal.classList.add('hidden'); }, 300);
             deleteTargetId = null;
         }
 
         function confirmDelete() {
-            if (deleteTargetId) {
-                deleteGameFromData(deleteTargetId);
-                showToast("기록이 삭제되었습니다.");
-            } else {
-                clearAllHistoryData();
-                generatedBallsArea.innerHTML = '<span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>';
-                currentNumbers = [];
-                showToast("모든 기록이 삭제되었습니다.");
-            }
+            if (deleteTargetId) { deleteGameFromData(deleteTargetId); showToast("기록이 삭제되었습니다."); }
+            else { clearCurrentRoundHistory(); generatedBallsArea.innerHTML = '<span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>'; currentNumbers = []; showToast(`${currentRound}회차 기록이 모두 삭제되었습니다.`); }
             closeDeleteConfirmModal();
         }
 
         function copyNumbers() {
-            if (currentNumbers.length === 0) {
-                showToast("먼저 번호를 생성해주세요.");
-                return;
-            }
+            if (currentNumbers.length === 0) { showToast("먼저 번호를 생성해주세요."); return; }
             const textToCopy = currentNumbers.join(', ');
-            
-            const textArea = document.createElement("textarea");
-            textArea.value = textToCopy;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-9999px';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
-            try {
-                document.execCommand('copy');
-                showToast("번호가 복사되었습니다: " + textToCopy);
-            } catch (err) {
-                showToast("복사에 실패했습니다.");
-            }
+            const textArea = document.createElement("textarea"); textArea.value = textToCopy; textArea.style.position = 'fixed'; textArea.style.left = '-9999px';
+            document.body.appendChild(textArea); textArea.focus(); textArea.select();
+            try { document.execCommand('copy'); showToast("번호가 복사되었습니다: " + textToCopy); } catch (err) { showToast("복사에 실패했습니다."); }
             document.body.removeChild(textArea);
         }
 
         function showToast(message, isError = false) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            if (isError) {
-                toast.classList.remove('bg-gray-800');
-                toast.classList.add('bg-red-600');
-            } else {
-                toast.classList.remove('bg-red-600');
-                toast.classList.add('bg-gray-800');
-            }
-            toast.style.opacity = '1';
-            setTimeout(() => toast.style.opacity = '0', 2500);
+            const toast = document.getElementById('toast'); toast.textContent = message;
+            if (isError) { toast.classList.remove('bg-gray-800'); toast.classList.add('bg-red-600'); } else { toast.classList.remove('bg-red-600'); toast.classList.add('bg-gray-800'); }
+            toast.style.opacity = '1'; setTimeout(() => toast.style.opacity = '0', 2500);
         }
 
         function openManualInput() {
-            manualSelection = new Set();
-            updateManualUI();
-            
-            const grid = manualInputModal.querySelector('.grid');
-            grid.innerHTML = '';
-            for(let i=1; i<=45; i++) {
-                const btn = document.createElement('div');
-                btn.className = 'select-ball';
-                btn.textContent = i;
-                btn.onclick = () => toggleManualNumber(i, btn);
-                grid.appendChild(btn);
-            }
-
-            manualInputModal.classList.remove('hidden');
-            setTimeout(() => {
-                manualInputModal.classList.add('opacity-100');
-                manualInputModal.querySelector('div').classList.remove('scale-95');
-                manualInputModal.querySelector('div').classList.add('scale-100');
-            }, 10);
+            manualSelection = new Set(); updateManualUI();
+            const grid = manualInputModal.querySelector('.grid'); grid.innerHTML = '';
+            for(let i=1; i<=45; i++) { const btn = document.createElement('div'); btn.className = 'select-ball'; btn.textContent = i; btn.onclick = () => toggleManualNumber(i, btn); grid.appendChild(btn); }
+            manualInputModal.classList.remove('hidden'); setTimeout(() => { manualInputModal.classList.add('opacity-100'); manualInputModal.querySelector('div').classList.remove('scale-95'); manualInputModal.querySelector('div').classList.add('scale-100'); }, 10);
         }
 
         function toggleManualNumber(num, btn) {
-            if (manualSelection.has(num)) {
-                manualSelection.delete(num);
-                btn.classList.remove('selected');
-                btn.style.background = '';
-                btn.style.border = '';
-            } else {
-                if (manualSelection.size >= 6) {
-                    showToast("6개까지만 선택할 수 있습니다.", true);
-                    return;
-                }
-                manualSelection.add(num);
-                btn.classList.add('selected');
-                if (num <= 10) btn.style.background = '#fbc400';
-                else if (num <= 20) btn.style.background = '#69c';
-                else if (num <= 30) btn.style.background = '#ff7272';
-                else if (num <= 40) btn.style.background = '#a5a5a5';
-                else btn.style.background = '#b0d840';
-                btn.style.borderColor = 'transparent';
-            }
+            if (manualSelection.has(num)) { manualSelection.delete(num); btn.classList.remove('selected'); btn.style.background = ''; btn.style.border = ''; }
+            else { if (manualSelection.size >= 6) { showToast("6개까지만 선택할 수 있습니다.", true); return; } manualSelection.add(num); btn.classList.add('selected'); if (num <= 10) btn.style.background = '#fbc400'; else if (num <= 20) btn.style.background = '#69c'; else if (num <= 30) btn.style.background = '#ff7272'; else if (num <= 40) btn.style.background = '#a5a5a5'; else btn.style.background = '#b0d840'; btn.style.borderColor = 'transparent'; }
             updateManualUI();
         }
 
         function updateManualUI() {
             document.getElementById('manual-count').textContent = manualSelection.size;
             const saveBtn = document.getElementById('manual-save-btn');
-            if (manualSelection.size === 6) {
-                saveBtn.disabled = false;
-                saveBtn.classList.remove('bg-gray-300', 'cursor-not-allowed');
-                saveBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
-            } else {
-                saveBtn.disabled = true;
-                saveBtn.classList.add('bg-gray-300', 'cursor-not-allowed');
-                saveBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-            }
+            if (manualSelection.size === 6) { saveBtn.disabled = false; saveBtn.classList.remove('bg-gray-300', 'cursor-not-allowed'); saveBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700'); }
+            else { saveBtn.disabled = true; saveBtn.classList.add('bg-gray-300', 'cursor-not-allowed'); saveBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700'); }
         }
 
         function resetManualSelection() {
             manualSelection.clear();
             const btns = manualInputModal.querySelectorAll('.select-ball');
-            btns.forEach(btn => {
-                btn.classList.remove('selected');
-                btn.style.background = '';
-                btn.style.borderColor = '';
-            });
+            btns.forEach(btn => { btn.classList.remove('selected'); btn.style.background = ''; btn.style.borderColor = ''; });
             updateManualUI();
         }
 
         function saveManualInput() {
             if (manualSelection.size !== 6) return;
             currentNumbers = Array.from(manualSelection).sort((a, b) => a - b);
-            displayNumbers(currentNumbers);
-            addGameToData(currentNumbers, "수동 입력");
-            closeManualInput();
-            showToast("수동 입력이 완료되었습니다!");
+            displayNumbers(currentNumbers); addGameToData(currentNumbers, "수동 입력"); closeManualInput(); showToast("수동 입력이 완료되었습니다!");
         }
 
         function closeManualInput() {
-            manualInputModal.classList.remove('opacity-100');
-            manualInputModal.querySelector('div').classList.remove('scale-100');
-            manualInputModal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => {
-                manualInputModal.classList.add('hidden');
-            }, 300);
+            manualInputModal.classList.remove('opacity-100'); manualInputModal.querySelector('div').classList.remove('scale-100'); manualInputModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { manualInputModal.classList.add('hidden'); }, 300);
         }
 
-        function triggerImageUpload() {
-            document.getElementById('image-input').click();
-        }
+        function triggerImageUpload() { document.getElementById('image-input').click(); }
 
         function handleImageUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            scanLoader.style.display = 'flex'; 
-            scanMessage.textContent = "이미지 전처리 중...";
-            scanSubMessage.textContent = "가독성을 높이고 있습니다";
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    processImage(img);
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-            e.target.value = '';
+            const file = e.target.files[0]; if (!file) return;
+            scanLoader.style.display = 'flex'; scanMessage.textContent = "이미지 전처리 중..."; scanSubMessage.textContent = "가독성을 높이고 있습니다";
+            const reader = new FileReader(); reader.onload = function(event) { const img = new Image(); img.onload = function() { processImage(img); }; img.src = event.target.result; }; reader.readAsDataURL(file); e.target.value = '';
         }
 
         function processImage(img) {
-            const canvas = document.getElementById('scan-canvas');
-            const context = canvas.getContext('2d');
-            
-            const scaleFactor = 2; 
-            canvas.width = img.width * scaleFactor;
-            canvas.height = img.height * scaleFactor;
-            context.scale(scaleFactor, scaleFactor);
-            context.drawImage(img, 0, 0);
-            
+            const canvas = document.getElementById('scan-canvas'); const context = canvas.getContext('2d');
+            const scaleFactor = 2; canvas.width = img.width * scaleFactor; canvas.height = img.height * scaleFactor;
+            context.scale(scaleFactor, scaleFactor); context.drawImage(img, 0, 0);
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            
-            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                inversionAttempts: "dontInvert",
-            });
-
-            if (code) {
-                const parsedGames = parseLottoQR(code.data);
-                if (parsedGames && parsedGames.length > 0) {
-                    finishScan(parsedGames, "QR 스캔");
-                    return;
-                }
-            }
-
-            const d = imageData.data;
-            for (let i = 0; i < d.length; i += 4) {
-                const r = d[i];
-                const g = d[i+1];
-                const b = d[i+2];
-                const v = 0.2126*r + 0.7152*g + 0.0722*b;
-                d[i] = d[i+1] = d[i+2] = v;
-            }
-            context.putImageData(imageData, 0, 0);
-
-            scanMessage.textContent = "숫자 정밀 분석 중...";
-            scanSubMessage.textContent = "2배 확대하여 분석하고 있습니다...";
-            runOCR(canvas.toDataURL());
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+            if (code) { const parsedGames = parseLottoQR(code.data); if (parsedGames && parsedGames.length > 0) { finishScan(parsedGames, "QR 스캔"); return; } }
+            const d = imageData.data; for (let i = 0; i < d.length; i += 4) { const r = d[i]; const g = d[i+1]; const b = d[i+2]; const v = 0.2126*r + 0.7152*g + 0.0722*b; d[i] = d[i+1] = d[i+2] = v; }
+            context.putImageData(imageData, 0, 0); scanMessage.textContent = "숫자 정밀 분석 중..."; scanSubMessage.textContent = "2배 확대하여 분석하고 있습니다..."; runOCR(canvas.toDataURL());
         }
 
         async function runOCR(imageSrc) {
             try {
                 const worker = await Tesseract.createWorker('eng');
-                await worker.setParameters({
-                    tessedit_char_whitelist: 'ABCDE0123456789\n ', 
-                    tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK, 
-                });
-
+                await worker.setParameters({ tessedit_char_whitelist: 'ABCDE0123456789\n ', tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK });
                 const { data: { text } } = await worker.recognize(imageSrc);
                 const extractedGames = parseOCRText(text);
-                
-                if (extractedGames.length > 0) {
-                    finishScan(extractedGames, "이미지 분석");
-                } else {
-                    scanLoader.style.display = 'none';
-                    showToast("숫자를 찾지 못했습니다. 수동 입력을 이용해보세요!", true);
-                }
+                if (extractedGames.length > 0) { finishScan(extractedGames, "이미지 분석"); } else { scanLoader.style.display = 'none'; showToast("숫자를 찾지 못했습니다. 수동 입력을 이용해보세요!", true); }
                 await worker.terminate();
-            } catch (err) {
-                console.error(err);
-                scanLoader.style.display = 'none';
-                showToast("분석 중 오류가 발생했습니다.", true);
-            }
+            } catch (err) { console.error(err); scanLoader.style.display = 'none'; showToast("분석 중 오류가 발생했습니다.", true); }
         }
 
         function parseOCRText(text) {
-            let games = [];
-            const lines = text.split('\n');
-            
+            let games = []; const lines = text.split('\n');
             lines.forEach(line => {
-                const matches = line.match(/\b\d{1,2}\b/g);
-                if (!matches) return;
-                
+                const matches = line.match(/\b\d{1,2}\b/g); if (!matches) return;
                 const validNums = matches.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45);
                 const uniqueNums = [...new Set(validNums)];
-                
                 if (uniqueNums.length >= 6) {
                     const gameNums = uniqueNums.slice(0, 6).sort((a, b) => a - b);
-                    let label = `Auto Detect ${games.length + 1}`;
-                    const labelMatch = line.match(/[A-E]\b/); 
-                    if (labelMatch) label = labelMatch[0];
-                    
-                    games.push({
-                        label: label,
-                        numbers: gameNums
-                    });
+                    let label = `Auto Detect ${games.length + 1}`; const labelMatch = line.match(/[A-E]\b/); if (labelMatch) label = labelMatch[0];
+                    games.push({ label: label, numbers: gameNums });
                 }
             });
-
             if (games.length === 0) {
                 const allMatches = text.match(/\b\d{1,2}\b/g);
                 if (allMatches) {
                     const allValidNums = allMatches.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45);
                     let currentBuffer = [];
                     for (let i = 0; i < allValidNums.length; i++) {
-                        const num = allValidNums[i];
-                        if (!currentBuffer.includes(num)) currentBuffer.push(num);
-                        if (currentBuffer.length === 6) {
-                            games.push({
-                                label: `Auto Detect ${games.length + 1}`,
-                                numbers: [...currentBuffer].sort((a, b) => a - b)
-                            });
-                            currentBuffer = []; 
-                        }
+                        const num = allValidNums[i]; if (!currentBuffer.includes(num)) currentBuffer.push(num);
+                        if (currentBuffer.length === 6) { games.push({ label: `Auto Detect ${games.length + 1}`, numbers: [...currentBuffer].sort((a, b) => a - b) }); currentBuffer = []; }
                     }
                 }
             }
@@ -1166,43 +714,23 @@
         }
 
         function finishScan(games, method) {
-            scanLoader.style.display = 'none';
-            closeGlobalResult();
-            
-            if (games.length > 0) {
-                currentNumbers = games[0].numbers;
-                displayNumbers(currentNumbers);
-            }
-            for (let i = games.length - 1; i >= 0; i--) {
-                const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); 
-                addGameToData(games[i].numbers, `${method} ${label}`);
-            }
+            scanLoader.style.display = 'none'; closeGlobalResult();
+            if (games.length > 0) { currentNumbers = games[0].numbers; displayNumbers(currentNumbers); }
+            for (let i = games.length - 1; i >= 0; i--) { const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); addGameToData(games[i].numbers, `${method} ${label}`); }
             showToast(`${games.length}개의 게임을 추출했습니다!`);
         }
 
         function parseLottoQR(url) {
             try {
                 if (!url.includes('dhlottery.co.kr') || !url.includes('v=')) return null;
-                let params = url.split('v=')[1];
-                if (!params) return null;
-                if (params.includes('&')) params = params.split('&')[0];
-                const cleanStr = params.replace(/[^0-9]/g, '');
-                if (cleanStr.length < 16) return null; 
-
-                const numbersStr = cleanStr.substring(4);
-                const games = [];
-                const gameLabels = ['A', 'B', 'C', 'D', 'E'];
-                
+                let params = url.split('v=')[1]; if (!params) return null; if (params.includes('&')) params = params.split('&')[0];
+                const cleanStr = params.replace(/[^0-9]/g, ''); if (cleanStr.length < 16) return null; 
+                const numbersStr = cleanStr.substring(4); const games = []; const gameLabels = ['A', 'B', 'C', 'D', 'E'];
                 for (let i = 0; i < numbersStr.length; i += 12) {
-                    const chunk = numbersStr.substring(i, i + 12);
-                    if (chunk.length < 12) break;
-                    const nums = [];
-                    for (let j = 0; j < 12; j += 2) nums.push(parseInt(chunk.substring(j, j + 2)));
+                    const chunk = numbersStr.substring(i, i + 12); if (chunk.length < 12) break;
+                    const nums = []; for (let j = 0; j < 12; j += 2) nums.push(parseInt(chunk.substring(j, j + 2)));
                     if (nums.some(n => n < 1 || n > 45)) continue;
-                    games.push({
-                        label: gameLabels[games.length] || '?',
-                        numbers: nums.sort((a, b) => a - b)
-                    });
+                    games.push({ label: gameLabels[games.length] || '?', numbers: nums.sort((a, b) => a - b) });
                     if (games.length >= 5) break; 
                 }
                 return games;
@@ -1217,27 +745,14 @@
                 showModal();
                 const cachedData = winResults[round];
                 renderModalContent(cachedData);
-                const winArr = [
-                    cachedData.drwtNo1, cachedData.drwtNo2, cachedData.drwtNo3, 
-                    cachedData.drwtNo4, cachedData.drwtNo5, cachedData.drwtNo6
-                ];
+                const winArr = [cachedData.drwtNo1, cachedData.drwtNo2, cachedData.drwtNo3, cachedData.drwtNo4, cachedData.drwtNo5, cachedData.drwtNo6];
                 currentWinData = cachedData; 
                 checkWinningsInHistory(winArr, cachedData.bnusNo, true); 
                 return;
             }
 
             showModal();
-            modalContent.innerHTML = `
-                <div class="animate-pulse flex space-x-2 justify-center items-center h-16">
-                    <div class="h-8 w-8 bg-gray-200 rounded-full"></div>
-                    <div class="h-8 w-8 bg-gray-200 rounded-full"></div>
-                    <div class="h-8 w-8 bg-gray-200 rounded-full"></div>
-                    <div class="h-8 w-8 bg-gray-200 rounded-full"></div>
-                    <div class="h-8 w-8 bg-gray-200 rounded-full"></div>
-                    <div class="h-8 w-8 bg-gray-200 rounded-full"></div>
-                </div>
-                <p class="text-gray-500 text-sm mt-2">${round}회차 결과 확인 중...</p>
-            `;
+            modalContent.innerHTML = `<div class="animate-pulse flex space-x-2 justify-center items-center h-16"><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div></div><p class="text-gray-500 text-sm mt-2">${round}회차 결과 확인 중...</p>`;
 
             const startDate = new Date('2002-12-07T00:00:00');
             const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
@@ -1245,13 +760,7 @@
             const now = new Date();
 
             if (drawDate > now) {
-                modalContent.innerHTML = `
-                    <div class="text-center py-4">
-                        <i class="fas fa-clock text-4xl text-gray-300 mb-2"></i>
-                        <h4 class="text-lg font-bold text-gray-700">추첨 대기 중</h4>
-                        <p class="text-gray-500 text-sm mt-1">${round}회차 추첨일은<br>${drawDate.toLocaleDateString()} 입니다.</p>
-                    </div>
-                `;
+                modalContent.innerHTML = `<div class="text-center py-4"><i class="fas fa-clock text-4xl text-gray-300 mb-2"></i><h4 class="text-lg font-bold text-gray-700">추첨 대기 중</h4><p class="text-gray-500 text-sm mt-1">${round}회차 추첨일은<br>${drawDate.toLocaleDateString()} 입니다.</p></div>`;
                 return;
             }
 
@@ -1259,7 +768,6 @@
                 const timestamp = new Date().getTime();
                 const targetUrl = `https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=${round}&_=${timestamp}`;
                 
-                // Direct fetch
                 const response = await fetch(targetUrl);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const jsonResponse = await response.json();
@@ -1268,59 +776,31 @@
                     const lottoData = jsonResponse.data.list[0];
                     const dateStr = String(lottoData.ltRflYmd);
                     const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
-
                     const mappedData = {
-                        drwNo: lottoData.ltEpsd,
-                        drwNoDate: formattedDate,
-                        drwtNo1: lottoData.tm1WnNo,
-                        drwtNo2: lottoData.tm2WnNo,
-                        drwtNo3: lottoData.tm3WnNo,
-                        drwtNo4: lottoData.tm4WnNo,
-                        drwtNo5: lottoData.tm5WnNo,
-                        drwtNo6: lottoData.tm6WnNo,
+                        drwNo: lottoData.ltEpsd, drwNoDate: formattedDate,
+                        drwtNo1: lottoData.tm1WnNo, drwtNo2: lottoData.tm2WnNo, drwtNo3: lottoData.tm3WnNo,
+                        drwtNo4: lottoData.tm4WnNo, drwtNo5: lottoData.tm5WnNo, drwtNo6: lottoData.tm6WnNo,
                         bnusNo: lottoData.bnsWnNo
                     };
-
                     winResults[round] = mappedData;
                     localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
                     localStorage.setItem('lotto_current_round', round); 
-                    
                     currentWinData = mappedData; 
-
                     renderModalContent(mappedData);
-                    
-                    const winArr = [
-                        mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, 
-                        mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6
-                    ];
+                    const winArr = [mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6];
                     checkWinningsInHistory(winArr, mappedData.bnusNo, true);
-                } else {
-                    throw new Error('데이터 형식이 올바르지 않습니다.');
-                }
+                } else { throw new Error('데이터 형식이 올바르지 않습니다.'); }
             } catch (e) {
                 console.warn("Lotto API Direct Fetch Failed:", e);
                 showToast("데이터를 가져올 수 없어 가상 결과로 대체합니다. (CORS 등)", true);
                 
-                const winNumbers = new Set();
-                while(winNumbers.size < 6) winNumbers.add(Math.floor(Math.random() * 45) + 1);
+                const winNumbers = new Set(); while(winNumbers.size < 6) winNumbers.add(Math.floor(Math.random() * 45) + 1);
                 const winArr = Array.from(winNumbers).sort((a,b)=>a-b);
                 const bonus = Math.floor(Math.random() * 45) + 1;
-                
-                const year = drawDate.getFullYear();
-                const month = String(drawDate.getMonth() + 1).padStart(2, '0');
-                const day = String(drawDate.getDate()).padStart(2, '0');
+                const year = drawDate.getFullYear(); const month = String(drawDate.getMonth() + 1).padStart(2, '0'); const day = String(drawDate.getDate()).padStart(2, '0');
                 const simulatedDate = `${year}-${month}-${day} (모의)`;
-
-                const mockData = {
-                    drwNo: round,
-                    drwtNo1: winArr[0], drwtNo2: winArr[1], drwtNo3: winArr[2], 
-                    drwtNo4: winArr[3], drwtNo5: winArr[4], drwtNo6: winArr[5],
-                    bnusNo: bonus,
-                    drwNoDate: simulatedDate
-                };
-                
+                const mockData = { drwNo: round, drwtNo1: winArr[0], drwtNo2: winArr[1], drwtNo3: winArr[2], drwtNo4: winArr[3], drwtNo5: winArr[4], drwtNo6: winArr[5], bnusNo: bonus, drwNoDate: simulatedDate };
                 currentWinData = mockData;
-                
                 renderModalContent(mockData);
                 checkWinningsInHistory(winArr, bonus, true);
             }
@@ -1328,79 +808,45 @@
 
         function checkWinningsInHistory(winArr, bonus, showMessage = true) {
             const items = document.querySelectorAll('.history-item');
-            
             items.forEach(item => {
                 if (!item.dataset.numbers) return;
                 const myNumbers = JSON.parse(item.dataset.numbers);
                 applyWinStyleToItem(item, winArr, bonus, myNumbers);
             });
-            
             if(currentWinData) calculateAndShowSummary(currentWinData);
             if(showMessage) showToast("결과 확인 완료!");
         }
 
         function calculateAndShowSummary(winData) {
-            const winArr = [
-                winData.drwtNo1, winData.drwtNo2, winData.drwtNo3, 
-                winData.drwtNo4, winData.drwtNo5, winData.drwtNo6
-            ];
+            const winArr = [winData.drwtNo1, winData.drwtNo2, winData.drwtNo3, winData.drwtNo4, winData.drwtNo5, winData.drwtNo6];
             const bonus = winData.bnusNo;
-            
             let counts = { 1:0, 2:0, 3:0, 4:0, 5:0, fail:0 };
             let bestRank = 6;
-
             currentFilteredGames.forEach(game => {
                 const nums = game.numbers;
                 let matches = nums.filter(n => winArr.includes(n)).length;
                 let bonusMatch = nums.includes(bonus);
-                
                 let rank = 6;
                 if(matches === 6) rank = 1;
                 else if(matches === 5 && bonusMatch) rank = 2;
                 else if(matches === 5) rank = 3;
                 else if(matches === 4) rank = 4;
                 else if(matches === 3) rank = 5;
-                
-                if(rank < 6) counts[rank]++;
-                else counts.fail++;
-
+                if(rank < 6) counts[rank]++; else counts.fail++;
                 if(rank < bestRank) bestRank = rank;
             });
-
             const totalWins = counts[1] + counts[2] + counts[3] + counts[4] + counts[5];
             displayGlobalResult(bestRank, totalWins, counts);
         }
 
         function displayGlobalResult(bestRank, totalWins, counts) {
-            let title = "";
-            let desc = "";
-            let colorClass = "";
-
-            if (bestRank === 1) {
-                title = "🍀 대박! 1등 당첨! 🍀";
-                desc = "오늘이 바로 그날입니다! 인생 역전 축하드립니다!";
-                colorClass = "text-yellow-600";
-            } else if (bestRank === 2) {
-                title = "🍀 2등 당첨! 축하합니다! 🍀";
-                desc = "정말 아깝지만 대단한 결과입니다! 축하드려요!";
-                colorClass = "text-gray-600";
-            } else if (bestRank === 3) {
-                title = "🍀 3등 당첨! 🍀";
-                desc = "운이 좋으시네요! 맛있는 거 사드세요.";
-                colorClass = "text-orange-600";
-            } else if (bestRank === 4) {
-                title = "🍀 4등 당첨 🍀";
-                desc = "소소한 행복! 5만원 축하드려요.";
-                colorClass = "text-blue-600";
-            } else if (bestRank === 5) {
-                title = "🍀 5등 당첨 🍀";
-                desc = "본전은 찾으셨네요! 다음을 노려보세요.";
-                colorClass = "text-green-600";
-            } else {
-                title = "꽝.. 다음 기회에.. 😭";
-                desc = "아쉽지만 이번엔 운이 없었네요. 힘내세요!";
-                colorClass = "text-gray-500";
-            }
+            let title = "", desc = "", colorClass = "";
+            if (bestRank === 1) { title = "🍀 대박! 1등 당첨! 🍀"; desc = "오늘이 바로 그날입니다! 인생 역전 축하드립니다!"; colorClass = "text-yellow-600"; }
+            else if (bestRank === 2) { title = "🍀 2등 당첨! 축하합니다! 🍀"; desc = "정말 아깝지만 대단한 결과입니다! 축하드려요!"; colorClass = "text-gray-600"; }
+            else if (bestRank === 3) { title = "🍀 3등 당첨! 🍀"; desc = "운이 좋으시네요! 맛있는 거 사드세요."; colorClass = "text-orange-600"; }
+            else if (bestRank === 4) { title = "🍀 4등 당첨 🍀"; desc = "소소한 행복! 5만원 축하드려요."; colorClass = "text-blue-600"; }
+            else if (bestRank === 5) { title = "🍀 5등 당첨 🍀"; desc = "본전은 찾으셨네요! 다음을 노려보세요."; colorClass = "text-green-600"; }
+            else { title = "꽝.. 다음 기회에.. 😭"; desc = "아쉽지만 이번엔 운이 없었네요. 힘내세요!"; colorClass = "text-gray-500"; }
             
             if (totalWins > 0) {
                  let summary = `총 <b class="text-indigo-600">${totalWins}</b>건 당첨! (`;
@@ -1411,10 +857,8 @@
                  if(counts[4] > 0) details.push(`4등:${counts[4]}건`);
                  if(counts[5] > 0) details.push(`5등:${counts[5]}건`);
                  summary += details.join(', ') + ")";
-                 
                  desc += `<br><span class="mt-1 block text-gray-600 text-xs">${summary}</span>`;
             }
-
             showGlobalResult(title, desc, colorClass);
         }
 
