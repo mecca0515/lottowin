@@ -168,19 +168,30 @@
                 <div id="generated-balls-area" class="flex flex-wrap justify-center items-center w-full gap-2">
                     <span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>
                 </div>
+                <!-- Loading & Result Overlays -->
                 <div id="global-result-overlay" class="absolute inset-0 bg-white flex flex-col justify-center items-center hidden z-20 pb-4">
                     <h2 id="global-rank-title" class="text-lg font-bold mb-1"></h2>
                     <p id="global-rank-desc" class="text-xs text-gray-500 mb-4 text-center px-4"></p>
                     <button onclick="closeGlobalResult()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-1 px-4 rounded-md text-xs transition shadow-sm border border-gray-300">닫기</button>
                 </div>
+                <div id="ai-loader" class="absolute inset-0 bg-white bg-opacity-95 z-20 hidden flex-col items-center justify-center">
+                    <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+                    <p class="text-indigo-600 font-bold text-sm">AI가 분석 중입니다...</p>
+                    <p class="text-gray-400 text-xs mt-1">행운의 패턴을 찾고 있어요 ✨</p>
+                </div>
             </div>
 
-            <div class="flex gap-2 mb-2">
-                <button onclick="generateLotto()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-1 text-xs"><i class="fas fa-sync-alt"></i> 번호 생성</button>
-                <button onclick="triggerImageUpload()" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2" title="이미지/QR 번호 추출"><i class="fas fa-camera"></i></button>
+            <!-- Buttons Area -->
+            <div class="mb-2">
+                <button onclick="generateLottoAI()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2 text-base transform active:scale-95">
+                    <i class="fas fa-magic"></i> AI 번호 추천 받기
+                </button>
+            </div>
+            <div class="flex gap-2 mb-2 items-center">
+                <button onclick="triggerImageUpload()" class="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-sm" title="이미지/QR 번호 추출"><i class="fas fa-camera"></i> 스캔</button>
                 <input type="file" id="image-input" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
-                <button onclick="openManualInput()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-lg flex items-center justify-center gap-2" title="수동 입력"><i class="fas fa-hand-pointer"></i></button>
-                <button onclick="copyNumbers()" id="copy-btn" class="bg-white hover:bg-gray-100 text-gray-700 font-bold py-2 px-3 rounded-xl transition duration-200 border border-gray-200 shadow-sm" title="클립보드에 복사"><i class="far fa-copy"></i></button>
+                <button onclick="openManualInput()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-sm" title="수동 입력"><i class="fas fa-hand-pointer"></i> 수동</button>
+                <button onclick="copyNumbers()" id="copy-btn" class="w-12 h-12 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-full transition duration-200 border border-gray-200 shadow-sm flex items-center justify-center text-lg" title="클립보드에 복사"><i class="far fa-copy"></i></button>
             </div>
         </div>
 
@@ -218,7 +229,9 @@
     </div>
 
     <!-- Modals & Toasts -->
-    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50 text-sm whitespace-nowrap">번호가 복사되었습니다!</div>
+    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50 text-sm whitespace-nowrap flex items-center gap-2">
+        <i class="fas fa-info-circle"></i> <span id="toast-msg">메시지</span>
+    </div>
 
     <div id="result-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
@@ -273,7 +286,7 @@
         }
 
         // --- Configuration ---
-        const systemApiKey = ""; // Fallback key (if user key is missing)
+        const apiKey = ""; // System injected fallback key
         let userApiKey = localStorage.getItem('user_gemini_key') || "";
 
         // --- State ---
@@ -311,6 +324,7 @@
         const drawDateSpan = document.getElementById('draw-date');
         const settingsModal = document.getElementById('settings-modal');
         const userApiKeyInput = document.getElementById('user-api-key');
+        const aiLoader = document.getElementById('ai-loader');
 
         function init() {
             const storedHistory = localStorage.getItem('lotto_history');
@@ -546,6 +560,7 @@
                 let colorClass = 'text-gray-400', icon = '';
                 if (game.tag.includes('스캔') || game.tag.includes('분석')) { colorClass = 'text-teal-600'; icon = '⚡ '; }
                 else if (game.tag.includes('수동')) { colorClass = 'text-orange-500'; icon = '👆 '; }
+                else if (game.tag.includes('AI')) { colorClass = 'text-purple-600'; icon = '✨ '; }
                 tagSpan.className = `text-[10px] font-bold ${colorClass}`; tagSpan.textContent = icon + game.tag;
                 metaDiv.appendChild(tagSpan);
                 const rankSpan = document.createElement('span'); rankSpan.className = 'rank-badge text-[10px] font-bold ml-2 hidden'; 
@@ -571,7 +586,83 @@
             while (numbers.size < 6) { numbers.add(Math.floor(Math.random() * 45) + 1); }
             currentNumbers = Array.from(numbers).sort((a, b) => a - b);
             displayNumbers(currentNumbers);
-            addGameToData(currentNumbers, "자동 생성");
+            addGameToData(currentNumbers, "랜덤 생성");
+        }
+
+        async function generateLottoAI() {
+            closeGlobalResult();
+            // Show loader
+            aiLoader.style.display = 'flex';
+            generatedBallsArea.innerHTML = '';
+            
+            try {
+                const prompt = "Act as a lottery number prediction expert. Generate a single set of 6 unique lucky numbers between 1 and 45. Provide a very brief, one-sentence creative reason for this specific combination in Korean. \n\nOutput ONLY a valid JSON object in this format (no markdown): \n{ \"numbers\": [1, 2, 3, 4, 5, 6], \"reason\": \"이유\" }";
+                
+                const responseText = await callGeminiTextAPI(prompt);
+                
+                // Parse JSON
+                let result;
+                try {
+                    // Remove any potential markdown code blocks
+                    const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+                    result = JSON.parse(cleanText);
+                } catch (e) {
+                    console.error("JSON Parse Error:", e);
+                    throw new Error("AI 응답을 해석할 수 없습니다.");
+                }
+
+                if (!result.numbers || result.numbers.length !== 6) {
+                    throw new Error("올바른 번호가 생성되지 않았습니다.");
+                }
+
+                currentNumbers = result.numbers.sort((a, b) => a - b);
+                displayNumbers(currentNumbers);
+                addGameToData(currentNumbers, "AI 추천");
+                
+                if (result.reason) {
+                    showToast("✨ AI: " + result.reason);
+                }
+
+            } catch (err) {
+                console.error(err);
+                showToast("AI 생성 실패: " + err.message, true);
+                // Fallback to random if AI fails
+                generateLotto();
+            } finally {
+                aiLoader.style.display = 'none';
+            }
+        }
+
+        async function callGeminiTextAPI(prompt) {
+             const keyToUse = userApiKey || apiKey;
+            
+            if (!keyToUse) {
+                showToast("API 키가 설정되지 않았습니다. 설정에서 키를 등록해주세요.", true);
+                throw new Error("Missing API Key");
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                 if (response.status === 400 || response.status === 403) {
+                     setTimeout(() => openSettings(), 1500);
+                 }
+                throw new Error(`Gemini API Error: ${response.status}`);
+            }
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
         }
 
         function getBallColorClass(num) {
@@ -636,9 +727,20 @@
         }
 
         function showToast(message, isError = false) {
-            const toast = document.getElementById('toast'); toast.textContent = message;
-            if (isError) { toast.classList.remove('bg-gray-800'); toast.classList.add('bg-red-600'); } else { toast.classList.remove('bg-red-600'); toast.classList.add('bg-gray-800'); }
-            toast.style.opacity = '1'; setTimeout(() => toast.style.opacity = '0', 2500);
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = message;
+            
+            const icon = toast.querySelector('i');
+            if (isError) { 
+                toast.classList.remove('bg-gray-800'); toast.classList.add('bg-red-600'); 
+                icon.className = "fas fa-exclamation-circle";
+            } else { 
+                toast.classList.remove('bg-red-600'); toast.classList.add('bg-gray-800'); 
+                icon.className = "fas fa-check-circle";
+            }
+            
+            toast.style.opacity = '1'; 
+            setTimeout(() => toast.style.opacity = '0', 2500);
         }
 
         function openManualInput() {
@@ -754,7 +856,7 @@
 
         async function callGeminiAPI(prompt, base64Image) {
             // Determine key to use: User Preference > System Fallback
-            const keyToUse = userApiKey || systemApiKey;
+            const keyToUse = userApiKey || apiKey;
             
             if (!keyToUse) {
                 showToast("API 키가 설정되지 않았습니다. 설정에서 키를 등록해주세요.", true);
@@ -780,7 +882,6 @@
             });
 
             if (!response.ok) {
-                // Handle specific errors potentially
                 const errData = await response.json();
                 console.error("Gemini API Error Details:", errData);
                 throw new Error(`Gemini API Error: ${response.status}`);
@@ -794,24 +895,19 @@
             const lines = text.split('\n');
             
             lines.forEach(line => {
-                // Look for lines containing numbers
                 const numsMatch = line.match(/\d+/g);
                 if (!numsMatch) return;
 
                 const validNums = numsMatch.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45);
                 const uniqueNums = [...new Set(validNums)];
 
-                // Standard Lotto has 6 numbers per game
                 if (uniqueNums.length >= 6) {
                     const gameNums = uniqueNums.slice(0, 6).sort((a, b) => a - b);
-                    
-                    // Try to detect Row Label (A, B, C, etc.)
                     let label = '자동';
                     const labelMatch = line.match(/([A-E])[:.)]/i); 
                     if (labelMatch) {
                         label = labelMatch[1].toUpperCase();
                     } else if (games.length < 5) {
-                        // Fallback: Assign label based on index if explicit label is missing but line looks like a game
                         const labels = ['A', 'B', 'C', 'D', 'E'];
                         label = labels[games.length];
                     }
@@ -826,9 +922,6 @@
             scanLoader.style.display = 'none'; closeGlobalResult();
             if (games.length > 0) { currentNumbers = games[0].numbers; displayNumbers(currentNumbers); }
             
-            // Add games in reverse order so A appears first if we unshift
-            // But addGameToData unshifts (adds to top), so we should add E, then D... to make A appear at top of list
-            // Or if we want them simply added to history:
             for (let i = games.length - 1; i >= 0; i--) { 
                 const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); 
                 addGameToData(games[i].numbers, `${method} ${label}`); 
