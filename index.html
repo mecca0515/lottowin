@@ -16,7 +16,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- QR Code Scanner Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <!-- Removed Tesseract.js in favor of Gemini API -->
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
@@ -128,7 +128,7 @@
         .result-banner { transition: all 0.3s ease-out; max-height: 0; overflow: hidden; opacity: 0; }
         .result-banner.show { max-height: 200px; opacity: 1; margin-bottom: 0.25rem; padding: 0.25rem; }
 
-        #result-modal, #manual-input-modal, #delete-confirm-modal { background-color: rgba(0, 0, 0, 0.5); }
+        #result-modal, #manual-input-modal, #delete-confirm-modal, #settings-modal { background-color: rgba(0, 0, 0, 0.5); }
 
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
@@ -145,7 +145,8 @@
 <body class="min-h-screen flex items-center justify-center p-2">
     <div class="main-container max-w-md w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         <!-- Header -->
-        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-center shrink-0 flex flex-col items-center">
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-center shrink-0 flex flex-col items-center relative">
+            <button onclick="openSettings()" class="absolute right-4 top-4 text-white text-opacity-80 hover:text-opacity-100 transition"><i class="fas fa-cog"></i></button>
             <h1 class="text-xl font-bold text-white mb-1">🍀 부자 되기 프로젝트 💸</h1>
             <p class="text-purple-100 text-xs mb-2 italic">"당신의 하루에 행운이 깃들기를 바랍니다"</p>
             <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-2 py-1 shadow-inner transition-colors hover:bg-opacity-30 gap-2">
@@ -243,6 +244,22 @@
         </div>
     </div>
 
+    <div id="settings-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-800">⚙️ 설정</h3><button onclick="closeSettings()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button></div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-2">개인 Gemini API 키</label>
+                <input type="password" id="user-api-key" placeholder="AIza..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50">
+                <p class="text-xs text-gray-500 mt-2">
+                    * 시스템을 무료로 계속 사용하려면 Google AI Studio에서 무료 API 키를 발급받아 입력해주세요.<br>
+                    * 키는 브라우저에만 저장됩니다.
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-600 underline hover:text-indigo-800 ml-1">키 발급받기</a>
+                </p>
+            </div>
+            <button onclick="saveApiKey()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl transition">저장하기</button>
+        </div>
+    </div>
+
     <canvas id="scan-canvas" class="hidden"></canvas>
 
     <script>
@@ -255,7 +272,11 @@
             });
         }
 
-        const apiKey = "AIzaSyB-wtUOVotTYnY7pWiR3fz-GQt4607e5-k"; // System injected
+        // --- Configuration ---
+        const systemApiKey = ""; // Fallback key (if user key is missing)
+        let userApiKey = localStorage.getItem('user_gemini_key') || "";
+
+        // --- State ---
         let currentNumbers = [];
         let manualSelection = new Set();
         let historyData = []; 
@@ -267,6 +288,7 @@
         let currentFilteredGames = [];
         let currentWinData = null; 
 
+        // --- Elements ---
         const historyList = document.getElementById('history-list');
         const emptyMsg = document.getElementById('empty-history-msg');
         const container = document.getElementById('numbers-container');
@@ -287,6 +309,8 @@
         const roundInput = document.getElementById('round-input');
         const historyRoundLabel = document.getElementById('history-round-label');
         const drawDateSpan = document.getElementById('draw-date');
+        const settingsModal = document.getElementById('settings-modal');
+        const userApiKeyInput = document.getElementById('user-api-key');
 
         function init() {
             const storedHistory = localStorage.getItem('lotto_history');
@@ -312,6 +336,9 @@
                     loadMoreHistory();
                 }
             });
+
+            // Init Settings
+            if (userApiKey) { userApiKeyInput.value = userApiKey; }
         }
 
         function calculateCurrentRound() {
@@ -651,6 +678,32 @@
             manualInputModal.classList.remove('opacity-100'); manualInputModal.querySelector('div').classList.remove('scale-100'); manualInputModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { manualInputModal.classList.add('hidden'); }, 300);
         }
 
+        // --- Settings Logic ---
+        function openSettings() {
+            settingsModal.classList.remove('hidden');
+            setTimeout(() => {
+                settingsModal.classList.add('opacity-100');
+                settingsModal.querySelector('div').classList.remove('scale-95');
+                settingsModal.querySelector('div').classList.add('scale-100');
+            }, 10);
+            if (userApiKey) { userApiKeyInput.value = userApiKey; }
+        }
+
+        function closeSettings() {
+            settingsModal.classList.remove('opacity-100');
+            settingsModal.querySelector('div').classList.remove('scale-100');
+            settingsModal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => { settingsModal.classList.add('hidden'); }, 300);
+        }
+
+        function saveApiKey() {
+            const inputKey = userApiKeyInput.value.trim();
+            userApiKey = inputKey;
+            localStorage.setItem('user_gemini_key', inputKey);
+            showToast("API 키가 저장되었습니다.");
+            closeSettings();
+        }
+
         function triggerImageUpload() { document.getElementById('image-input').click(); }
 
         function handleImageUpload(e) {
@@ -677,7 +730,6 @@
 
         async function runGeminiAnalysis(base64Image) {
             try {
-                // Prompt specifically designed for Lotto row extraction
                 const prompt = "Analyze this image and extract ONLY the lottery numbers. Ignore all other text such as dates, serial numbers, store info, or prices. Return ONLY the valid numbers (1-45 for standard lotto), clearly grouped by row. IMPORTANT: Ensure each game row (A, B, C, etc.) is on a completely separate line. Format example:\nA: 1, 2, 3, 4, 5, 6\nB: 7, 8, 9, 10, 11, 12\nDo not include any other commentary.";
                 
                 const text = await callGeminiAPI(prompt, base64Image);
@@ -692,13 +744,25 @@
             } catch (err) { 
                 console.error(err); 
                 scanLoader.style.display = 'none'; 
-                showToast("분석 중 오류가 발생했습니다.", true); 
+                showToast("분석 중 오류가 발생했습니다. (키 설정 확인 필요)", true); 
+                // Auto open settings if unauthorized
+                if (err.message.includes('400') || err.message.includes('401') || err.message.includes('403')) {
+                     setTimeout(() => openSettings(), 1500);
+                }
             }
         }
 
         async function callGeminiAPI(prompt, base64Image) {
+            // Determine key to use: User Preference > System Fallback
+            const keyToUse = userApiKey || systemApiKey;
+            
+            if (!keyToUse) {
+                showToast("API 키가 설정되지 않았습니다. 설정에서 키를 등록해주세요.", true);
+                throw new Error("Missing API Key");
+            }
+
             const cleanBase64 = base64Image.split(',')[1];
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`;
             
             const payload = {
                 contents: [{
@@ -715,7 +779,12 @@
                 body: JSON.stringify(payload)
             });
 
-            if (!response.ok) throw new Error('Gemini API Error');
+            if (!response.ok) {
+                // Handle specific errors potentially
+                const errData = await response.json();
+                console.error("Gemini API Error Details:", errData);
+                throw new Error(`Gemini API Error: ${response.status}`);
+            }
             const data = await response.json();
             return data.candidates[0].content.parts[0].text;
         }
