@@ -7,7 +7,7 @@
     
     <!-- PWA Settings -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4f46e5">
+    <meta name="theme-color" content="#059669">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="로또메이커">
@@ -135,6 +135,15 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
         
+        /* Floating Badge Animation */
+        @keyframes float-badge {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        .animate-float-badge {
+            animation: float-badge 2s ease-in-out infinite;
+        }
+
         @media (max-width: 640px) {
             .lotto-ball { width: 2.5rem; height: 2.5rem; font-size: 1rem; }
             .small-ball { width: 1.5rem; height: 1.5rem; font-size: 0.75rem; }
@@ -145,10 +154,10 @@
 <body class="min-h-screen flex items-center justify-center p-2">
     <div class="main-container max-w-md w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         <!-- Header -->
-        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-center shrink-0 flex flex-col items-center relative">
+        <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 text-center shrink-0 flex flex-col items-center relative">
             <button onclick="openSettings()" class="absolute right-4 top-4 text-white text-opacity-80 hover:text-opacity-100 transition"><i class="fas fa-cog"></i></button>
             <h1 class="text-xl font-bold text-white mb-1">🍀 부자 되기 프로젝트 💸</h1>
-            <p class="text-purple-100 text-xs mb-2 italic">"당신의 하루에 행운이 깃들기를 바랍니다"</p>
+            <p class="text-emerald-100 text-xs mb-2 italic">"당신의 하루에 행운이 깃들기를 바랍니다"</p>
             <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-2 py-1 shadow-inner transition-colors hover:bg-opacity-30 gap-2">
                 <div class="flex items-center border-r border-white border-opacity-30 pr-5 relative group cursor-pointer">
                     <span class="text-white text-xs mr-1 font-bold">회차 선택</span>
@@ -175,20 +184,28 @@
                     <button onclick="closeGlobalResult()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-1 px-4 rounded-md text-xs transition shadow-sm border border-gray-300">닫기</button>
                 </div>
                 <div id="ai-loader" class="absolute inset-0 bg-white bg-opacity-95 z-20 hidden flex-col items-center justify-center">
-                    <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
-                    <p class="text-indigo-600 font-bold text-sm">AI가 분석 중입니다...</p>
+                    <div class="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-3"></div>
+                    <p class="text-emerald-600 font-bold text-sm">AI가 분석 중입니다...</p>
                     <p class="text-gray-400 text-xs mt-1">행운의 패턴을 찾고 있어요 ✨</p>
                 </div>
             </div>
 
-            <!-- Buttons Area -->
-            <div class="mb-2">
-                <button onclick="generateLottoAI()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2 text-base transform active:scale-95">
+            <!-- Buttons Area: Increased margin-bottom to avoid badge overlap -->
+            <div class="mb-5">
+                <button onclick="generateLottoAI()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2 text-base transform active:scale-95">
                     <i class="fas fa-magic"></i> AI 번호 추천 받기
                 </button>
             </div>
             <div class="flex gap-2 mb-2 items-center">
-                <button onclick="triggerImageUpload()" class="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-sm" title="이미지/QR 번호 추출"><i class="fas fa-camera"></i> 스캔</button>
+                <!-- Scan Button with Floating Badge -->
+                <button id="scan-btn" onclick="handleScanClick()" class="relative flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-sm overflow-visible" title="이미지/QR 번호 추출">
+                    <i class="fas fa-camera"></i> <span>스캔</span>
+                    <!-- API Key Needed Badge -->
+                    <span id="key-badge" class="absolute -top-3 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md hidden animate-float-badge whitespace-nowrap z-10 border border-white">
+                        API Key 필요 🔒
+                        <span class="absolute bottom-[-4px] left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-red-500"></span>
+                    </span>
+                </button>
                 <input type="file" id="image-input" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
                 <button onclick="openManualInput()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-sm" title="수동 입력"><i class="fas fa-hand-pointer"></i> 수동</button>
                 <button onclick="copyNumbers()" id="copy-btn" class="w-12 h-12 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-full transition duration-200 border border-gray-200 shadow-sm flex items-center justify-center text-lg" title="클립보드에 복사"><i class="far fa-copy"></i></button>
@@ -213,8 +230,8 @@
                         <div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400"><i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i><span class="text-xs">아직 이 회차의 기록이 없습니다.</span></div>
                     </div>
                     <div id="scan-loader" class="absolute inset-0 bg-white bg-opacity-95 z-10 hidden flex-col items-center justify-center rounded-lg">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
-                        <span id="scan-message" class="text-xs text-indigo-600 font-bold">이미지 분석 중...</span>
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mb-2"></div>
+                        <span id="scan-message" class="text-xs text-emerald-600 font-bold">이미지 분석 중...</span>
                         <span id="scan-sub-message" class="text-[10px] text-gray-400 mt-1">숫자만 집중해서 찾고 있습니다</span>
                     </div>
                 </div>
@@ -224,13 +241,13 @@
         <!-- Footer -->
         <div class="bg-white bg-opacity-50 p-2 text-center text-xs text-gray-500 border-t border-gray-100 shrink-0">
             <p class="font-bold text-gray-600 mb-1">Good Luck! 🍀</p>
-            <p class="text-[10px] text-gray-400 flex items-center justify-center gap-1">Created by <a href="mailto:mecca0515@gmail.com" class="font-bold text-indigo-500 hover:text-indigo-700 flex items-center gap-1 transition">mecca0515 <i class="fas fa-envelope text-[9px]"></i></a> <span class="w-1 h-1 bg-gray-300 rounded-full mx-1"></span> with <span class="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Gemini</span> ✨</p>
+            <p class="text-[10px] text-gray-400 flex items-center justify-center gap-1">Created by <a href="mailto:mecca0515@gmail.com" class="font-bold text-emerald-500 hover:text-emerald-700 flex items-center gap-1 transition">mecca0515 <i class="fas fa-envelope text-[9px]"></i></a> <span class="w-1 h-1 bg-gray-300 rounded-full mx-1"></span> with <span class="font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Gemini</span> ✨</p>
         </div>
     </div>
 
     <!-- Modals & Toasts -->
-    <div id="toast" class="fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50 text-sm whitespace-nowrap flex items-center gap-2">
-        <i class="fas fa-info-circle"></i> <span id="toast-msg">메시지</span>
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-50 text-sm flex items-center gap-3 w-max max-w-[85vw] sm:max-w-md break-keep">
+        <i class="fas fa-info-circle flex-shrink-0"></i> <span id="toast-msg" class="leading-snug">메시지</span>
     </div>
 
     <div id="result-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
@@ -269,7 +286,7 @@
                     <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-600 underline hover:text-indigo-800 ml-1">키 발급받기</a>
                 </p>
             </div>
-            <button onclick="saveApiKey()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl transition">저장하기</button>
+            <button onclick="saveApiKey()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl transition">저장하기</button>
         </div>
     </div>
 
@@ -325,6 +342,7 @@
         const settingsModal = document.getElementById('settings-modal');
         const userApiKeyInput = document.getElementById('user-api-key');
         const aiLoader = document.getElementById('ai-loader');
+        const scanBtn = document.getElementById('scan-btn');
 
         function init() {
             const storedHistory = localStorage.getItem('lotto_history');
@@ -351,8 +369,9 @@
                 }
             });
 
-            // Init Settings
+            // Init Settings & Buttons
             if (userApiKey) { userApiKeyInput.value = userApiKey; }
+            updateScanButtonState();
         }
 
         function calculateCurrentRound() {
@@ -561,6 +580,7 @@
                 if (game.tag.includes('스캔') || game.tag.includes('분석')) { colorClass = 'text-teal-600'; icon = '⚡ '; }
                 else if (game.tag.includes('수동')) { colorClass = 'text-orange-500'; icon = '👆 '; }
                 else if (game.tag.includes('AI')) { colorClass = 'text-purple-600'; icon = '✨ '; }
+                else if (game.tag.includes('랜덤')) { colorClass = 'text-gray-500'; icon = '🎲 '; }
                 tagSpan.className = `text-[10px] font-bold ${colorClass}`; tagSpan.textContent = icon + game.tag;
                 metaDiv.appendChild(tagSpan);
                 const rankSpan = document.createElement('span'); rankSpan.className = 'rank-badge text-[10px] font-bold ml-2 hidden'; 
@@ -591,6 +611,16 @@
 
         async function generateLottoAI() {
             closeGlobalResult();
+            
+            // Key check for AI generation fallback
+            const keyToUse = userApiKey || apiKey;
+            if (!keyToUse) {
+                // Fallback to random with a "sensible" message
+                generateLotto();
+                showToast("AI가 잠시 휴식 중이라, 우주의 기운을 모아 랜덤으로 뽑았습니다! 🌌");
+                return;
+            }
+
             // Show loader
             aiLoader.style.display = 'flex';
             generatedBallsArea.innerHTML = '';
@@ -603,7 +633,6 @@
                 // Parse JSON
                 let result;
                 try {
-                    // Remove any potential markdown code blocks
                     const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
                     result = JSON.parse(cleanText);
                 } catch (e) {
@@ -625,9 +654,9 @@
 
             } catch (err) {
                 console.error(err);
-                showToast("AI 생성 실패: " + err.message, true);
-                // Fallback to random if AI fails
+                // Failover to random if actual API call fails
                 generateLotto();
+                showToast("AI 통신 오류로 랜덤 번호를 생성했습니다.", true);
             } finally {
                 aiLoader.style.display = 'none';
             }
@@ -635,11 +664,8 @@
 
         async function callGeminiTextAPI(prompt) {
              const keyToUse = userApiKey || apiKey;
-            
-            if (!keyToUse) {
-                showToast("API 키가 설정되지 않았습니다. 설정에서 키를 등록해주세요.", true);
-                throw new Error("Missing API Key");
-            }
+             // We checked key existence in generateLottoAI, but double check here
+             if (!keyToUse) throw new Error("Missing API Key");
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`;
             
@@ -657,7 +683,7 @@
 
             if (!response.ok) {
                  if (response.status === 400 || response.status === 403) {
-                     setTimeout(() => openSettings(), 1500);
+                     // Optionally redirect to settings, but user might be confused if random gen happened
                  }
                 throw new Error(`Gemini API Error: ${response.status}`);
             }
@@ -804,6 +830,35 @@
             localStorage.setItem('user_gemini_key', inputKey);
             showToast("API 키가 저장되었습니다.");
             closeSettings();
+            updateScanButtonState(); // Update UI
+        }
+
+        function updateScanButtonState() {
+            const hasKey = userApiKey || apiKey;
+            const scanBtn = document.getElementById('scan-btn');
+            const keyBadge = document.getElementById('key-badge');
+            
+            // Text remains "스캔", Icon remains camera
+            
+            if (hasKey) {
+                scanBtn.classList.remove('bg-gray-400');
+                scanBtn.classList.add('bg-teal-500', 'hover:bg-teal-600');
+                keyBadge.classList.add('hidden');
+            } else {
+                // Grayed out but clickable
+                scanBtn.classList.remove('bg-teal-500', 'hover:bg-teal-600');
+                scanBtn.classList.add('bg-gray-400');
+                keyBadge.classList.remove('hidden');
+            }
+        }
+
+        function handleScanClick() {
+            const hasKey = userApiKey || apiKey;
+            if (!hasKey) {
+                showToast("스캔 기능을 사용하려면 설정(⚙️)에서 API Key를 입력해주세요.", true);
+            } else {
+                triggerImageUpload();
+            }
         }
 
         function triggerImageUpload() { document.getElementById('image-input').click(); }
