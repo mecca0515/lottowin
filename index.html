@@ -16,10 +16,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- QR Code Scanner Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <!-- OCR Library (Tesseract.js) -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6413625773978376"
-                     crossorigin="anonymous"></script>
+    <!-- Removed Tesseract.js in favor of Gemini API -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
@@ -150,7 +147,7 @@
         <!-- Header -->
         <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 text-center shrink-0 flex flex-col items-center">
             <h1 class="text-xl font-bold text-white mb-1">🍀 부자 되기 프로젝트 💸</h1>
-            <p class="text-purple-100 text-xs mb-2 italic">"당신에게 행운이 깃들기를 바랍니다"</p>
+            <p class="text-purple-100 text-xs mb-2 italic">"당신의 하루에 행운이 깃들기를 바랍니다"</p>
             <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-2 py-1 shadow-inner transition-colors hover:bg-opacity-30 gap-2">
                 <div class="flex items-center border-r border-white border-opacity-30 pr-5 relative group cursor-pointer">
                     <span class="text-white text-xs mr-1 font-bold">회차 선택</span>
@@ -258,6 +255,7 @@
             });
         }
 
+        const apiKey = "AIzaSyB-wtUOVotTYnY7pWiR3fz-GQt4607e5-k"; // System injected
         let currentNumbers = [];
         let manualSelection = new Set();
         let historyData = []; 
@@ -321,10 +319,6 @@
             const today = new Date();
             const diffTime = Math.abs(today - startDate);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-            // 금요일 기준 다음날(토요일) 회차까지 나오도록 계산 조정
-            // 8441 days -> 1205.8 -> floor 1205. 
-            // We want 1207 for Jan 17 2026. 
-            // (diffDays - 1) / 7 + 2 seems correct for this date.
             return Math.floor((diffDays - 1) / 7) + 2;
         }
 
@@ -661,62 +655,115 @@
 
         function handleImageUpload(e) {
             const file = e.target.files[0]; if (!file) return;
-            scanLoader.style.display = 'flex'; scanMessage.textContent = "이미지 전처리 중..."; scanSubMessage.textContent = "가독성을 높이고 있습니다";
+            scanLoader.style.display = 'flex'; scanMessage.textContent = "이미지 처리 중..."; scanSubMessage.textContent = "AI가 로또 용지를 분석하고 있습니다";
             const reader = new FileReader(); reader.onload = function(event) { const img = new Image(); img.onload = function() { processImage(img); }; img.src = event.target.result; }; reader.readAsDataURL(file); e.target.value = '';
         }
 
         function processImage(img) {
             const canvas = document.getElementById('scan-canvas'); const context = canvas.getContext('2d');
-            const scaleFactor = 2; canvas.width = img.width * scaleFactor; canvas.height = img.height * scaleFactor;
+            const scaleFactor = 1.5; // Reduced scale for faster Gemini upload
+            canvas.width = img.width * scaleFactor; canvas.height = img.height * scaleFactor;
             context.scale(scaleFactor, scaleFactor); context.drawImage(img, 0, 0);
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Try QR Code first
             const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
             if (code) { const parsedGames = parseLottoQR(code.data); if (parsedGames && parsedGames.length > 0) { finishScan(parsedGames, "QR 스캔"); return; } }
-            const d = imageData.data; for (let i = 0; i < d.length; i += 4) { const r = d[i]; const g = d[i+1]; const b = d[i+2]; const v = 0.2126*r + 0.7152*g + 0.0722*b; d[i] = d[i+1] = d[i+2] = v; }
-            context.putImageData(imageData, 0, 0); scanMessage.textContent = "숫자 정밀 분석 중..."; scanSubMessage.textContent = "2배 확대하여 분석하고 있습니다..."; runOCR(canvas.toDataURL());
+            
+            // If QR fails, use Gemini
+            scanMessage.textContent = "AI 분석 중..."; scanSubMessage.textContent = "Gemini가 번호를 읽고 있습니다..."; 
+            runGeminiAnalysis(canvas.toDataURL("image/jpeg", 0.8));
         }
 
-        async function runOCR(imageSrc) {
+        async function runGeminiAnalysis(base64Image) {
             try {
-                const worker = await Tesseract.createWorker('eng');
-                await worker.setParameters({ tessedit_char_whitelist: 'ABCDE0123456789\n ', tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK });
-                const { data: { text } } = await worker.recognize(imageSrc);
-                const extractedGames = parseOCRText(text);
-                if (extractedGames.length > 0) { finishScan(extractedGames, "이미지 분석"); } else { scanLoader.style.display = 'none'; showToast("숫자를 찾지 못했습니다. 수동 입력을 이용해보세요!", true); }
-                await worker.terminate();
-            } catch (err) { console.error(err); scanLoader.style.display = 'none'; showToast("분석 중 오류가 발생했습니다.", true); }
+                // Prompt specifically designed for Lotto row extraction
+                const prompt = "Analyze this image and extract ONLY the lottery numbers. Ignore all other text such as dates, serial numbers, store info, or prices. Return ONLY the valid numbers (1-45 for standard lotto), clearly grouped by row. IMPORTANT: Ensure each game row (A, B, C, etc.) is on a completely separate line. Format example:\nA: 1, 2, 3, 4, 5, 6\nB: 7, 8, 9, 10, 11, 12\nDo not include any other commentary.";
+                
+                const text = await callGeminiAPI(prompt, base64Image);
+                const extractedGames = parseGeminiResponse(text);
+                
+                if (extractedGames.length > 0) { 
+                    finishScan(extractedGames, "AI 스캔"); 
+                } else { 
+                    scanLoader.style.display = 'none'; 
+                    showToast("숫자를 찾지 못했습니다. 수동 입력을 이용해보세요!", true); 
+                }
+            } catch (err) { 
+                console.error(err); 
+                scanLoader.style.display = 'none'; 
+                showToast("분석 중 오류가 발생했습니다.", true); 
+            }
         }
 
-        function parseOCRText(text) {
-            let games = []; const lines = text.split('\n');
+        async function callGeminiAPI(prompt, base64Image) {
+            const cleanBase64 = base64Image.split(',')[1];
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } }
+                    ]
+                }]
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error('Gemini API Error');
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        function parseGeminiResponse(text) {
+            const games = [];
+            const lines = text.split('\n');
+            
             lines.forEach(line => {
-                const matches = line.match(/\b\d{1,2}\b/g); if (!matches) return;
-                const validNums = matches.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45);
+                // Look for lines containing numbers
+                const numsMatch = line.match(/\d+/g);
+                if (!numsMatch) return;
+
+                const validNums = numsMatch.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45);
                 const uniqueNums = [...new Set(validNums)];
+
+                // Standard Lotto has 6 numbers per game
                 if (uniqueNums.length >= 6) {
                     const gameNums = uniqueNums.slice(0, 6).sort((a, b) => a - b);
-                    let label = `Auto Detect ${games.length + 1}`; const labelMatch = line.match(/[A-E]\b/); if (labelMatch) label = labelMatch[0];
+                    
+                    // Try to detect Row Label (A, B, C, etc.)
+                    let label = '자동';
+                    const labelMatch = line.match(/([A-E])[:.)]/i); 
+                    if (labelMatch) {
+                        label = labelMatch[1].toUpperCase();
+                    } else if (games.length < 5) {
+                        // Fallback: Assign label based on index if explicit label is missing but line looks like a game
+                        const labels = ['A', 'B', 'C', 'D', 'E'];
+                        label = labels[games.length];
+                    }
+                    
                     games.push({ label: label, numbers: gameNums });
                 }
             });
-            if (games.length === 0) {
-                const allMatches = text.match(/\b\d{1,2}\b/g);
-                if (allMatches) {
-                    const allValidNums = allMatches.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45);
-                    let currentBuffer = [];
-                    for (let i = 0; i < allValidNums.length; i++) {
-                        const num = allValidNums[i]; if (!currentBuffer.includes(num)) currentBuffer.push(num);
-                        if (currentBuffer.length === 6) { games.push({ label: `Auto Detect ${games.length + 1}`, numbers: [...currentBuffer].sort((a, b) => a - b) }); currentBuffer = []; }
-                    }
-                }
-            }
             return games;
         }
 
         function finishScan(games, method) {
             scanLoader.style.display = 'none'; closeGlobalResult();
             if (games.length > 0) { currentNumbers = games[0].numbers; displayNumbers(currentNumbers); }
-            for (let i = games.length - 1; i >= 0; i--) { const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); addGameToData(games[i].numbers, `${method} ${label}`); }
+            
+            // Add games in reverse order so A appears first if we unshift
+            // But addGameToData unshifts (adds to top), so we should add E, then D... to make A appear at top of list
+            // Or if we want them simply added to history:
+            for (let i = games.length - 1; i >= 0; i--) { 
+                const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); 
+                addGameToData(games[i].numbers, `${method} ${label}`); 
+            }
             showToast(`${games.length}개의 게임을 추출했습니다!`);
         }
 
