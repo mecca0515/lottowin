@@ -1,6 +1,6 @@
 {
-    "name": "LottoWin",
-    "short_name": "LottoWin",
+    "name": "로또윈",
+    "short_name": "로또윈",
     "description": "당신의 하루에 행운이 깃들기를 바랍니다",
     "start_url": "./index.html",
     "display": "standalone",
