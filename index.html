@@ -12,12 +12,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="LottoWin">
     
-    <!-- 업로드한 이미지를 아이콘으로 설정 -->
-    <link rel="icon" type="image/jpeg" href="app_logo.png">
+    <!-- 업로드한 이미지를 아이콘으로 설정 (파일명 변경: app_logo.png) -->
+    <link rel="icon" type="image/png" href="app_logo.png">
     <link rel="apple-touch-icon" href="app_logo.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>		
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@700&display=swap');
@@ -173,7 +173,8 @@
 
     <!-- Splash Screen -->
     <div id="splash-screen" class="fixed inset-0 z-[100] bg-gradient-to-br from-emerald-600 to-teal-800 flex flex-col items-center justify-center">
-        <img src="app_logo.png" class="w-32 h-32 rounded-3xl shadow-2xl mb-6 animate-bounce" alt="LottoWin Logo">
+        <!-- object-cover applied here -->
+        <img src="app_logo.png" class="w-32 h-32 rounded-3xl shadow-2xl mb-6 animate-bounce object-cover" alt="LottoWin Logo">
         <h1 class="text-3xl font-bold text-white tracking-widest font-[Poppins]">LottoWin</h1>
         <p class="text-emerald-100 text-sm mt-2">부자의 꿈을 현실로</p>
     </div>
@@ -183,9 +184,9 @@
         <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 text-center shrink-0 flex flex-col items-center relative">
             <button onclick="openSettings()" class="absolute right-4 top-4 text-white text-opacity-80 hover:text-opacity-100 transition"><i class="fas fa-cog"></i></button>
             
-            <!-- Logo Area (Updated with User Image) -->
+            <!-- Logo Area (Updated with User Image & object-cover) -->
             <div class="flex items-center justify-center gap-3 mb-2">
-                <img src="app_logo.png" class="w-10 h-10 rounded-xl shadow-md border-2 border-emerald-400" alt="Logo">
+                <img src="app_logo.png" class="w-10 h-10 rounded-xl shadow-md border-2 border-emerald-400 object-cover" alt="Logo">
                 <h1 class="text-2xl font-bold text-white tracking-tight" style="font-family: 'Poppins', sans-serif;">LottoWin</h1>
             </div>
             
@@ -222,7 +223,7 @@
                 </div>
             </div>
 
-            <!-- Buttons Area: Split into AI and Pattern -->
+            <!-- Buttons Area: Margin reduced to mb-4 -->
             <div class="mb-4 flex gap-2">
                 <button onclick="generateLottoAI()" class="flex-[3] bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2 text-base transform active:scale-95">
                     <i class="fas fa-magic"></i> AI 추천
@@ -284,7 +285,6 @@
         <i class="fas fa-info-circle flex-shrink-0"></i> <span id="toast-msg" class="leading-snug">메시지</span>
     </div>
 
-    <!-- ... (Result, Manual, Delete Modals - No Change) ... -->
     <div id="result-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
             <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-800">당첨 결과 확인</h3><button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button></div>
