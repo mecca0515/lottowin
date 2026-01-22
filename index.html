@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="LottoWin">
     
-    <!-- 업로드한 이미지를 아이콘으로 설정 (파일명 변경: app_logo.png) -->
+    <!-- 아이콘 설정 -->
     <link rel="icon" type="image/png" href="app_logo.png">
     <link rel="apple-touch-icon" href="app_logo.png">
 
@@ -46,7 +46,7 @@
             visibility: hidden;
         }
 
-        /* Existing Styles ... */
+        /* Styles for balls */
         .lotto-ball {
             width: 3rem;
             height: 3rem;
@@ -173,7 +173,6 @@
 
     <!-- Splash Screen -->
     <div id="splash-screen" class="fixed inset-0 z-[100] bg-gradient-to-br from-emerald-600 to-teal-800 flex flex-col items-center justify-center">
-        <!-- object-cover applied here -->
         <img src="app_logo.png" class="w-32 h-32 rounded-3xl shadow-2xl mb-6 animate-bounce object-cover" alt="LottoWin Logo">
         <h1 class="text-3xl font-bold text-white tracking-widest font-[Poppins]">LottoWin</h1>
         <p class="text-emerald-100 text-sm mt-2">부자의 꿈을 현실로</p>
@@ -184,7 +183,7 @@
         <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 text-center shrink-0 flex flex-col items-center relative">
             <button onclick="openSettings()" class="absolute right-4 top-4 text-white text-opacity-80 hover:text-opacity-100 transition"><i class="fas fa-cog"></i></button>
             
-            <!-- Logo Area (Updated with User Image & object-cover) -->
+            <!-- Logo Area -->
             <div class="flex items-center justify-center gap-3 mb-2">
                 <img src="app_logo.png" class="w-10 h-10 rounded-xl shadow-md border-2 border-emerald-400 object-cover" alt="Logo">
                 <h1 class="text-2xl font-bold text-white tracking-tight" style="font-family: 'Poppins', sans-serif;">LottoWin</h1>
@@ -223,7 +222,7 @@
                 </div>
             </div>
 
-            <!-- Buttons Area: Margin reduced to mb-4 -->
+            <!-- Buttons Area -->
             <div class="mb-4 flex gap-2">
                 <button onclick="generateLottoAI()" class="flex-[3] bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2 text-base transform active:scale-95">
                     <i class="fas fa-magic"></i> AI 추천
@@ -280,6 +279,11 @@
         </div>
     </div>
 
+    <!-- PWA Install Floating Button -->
+    <button id="pwa-install-btn" class="fixed bottom-6 right-6 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-3 rounded-full shadow-xl z-50 hidden flex items-center gap-2 transition transform hover:scale-105 active:scale-95 font-bold border-2 border-white animate-bounce" onclick="installPWA()">
+        <i class="fas fa-download"></i> <span>앱 설치</span>
+    </button>
+
     <!-- Modals & Toasts -->
     <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-xl shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-50 text-sm flex items-center gap-3 w-max max-w-[85vw] sm:max-w-md break-keep">
         <i class="fas fa-info-circle flex-shrink-0"></i> <span id="toast-msg" class="leading-snug">메시지</span>
@@ -309,7 +313,6 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
             <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-800">⚙️ 설정</h3><button onclick="closeSettings()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button></div>
@@ -358,6 +361,31 @@
         let userApiKey = localStorage.getItem('user_gemini_key') || "";
         let isNotificationEnabled = localStorage.getItem('lotto_noti_enabled') === 'true';
 
+        // --- PWA Install Logic ---
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            const installBtn = document.getElementById('pwa-install-btn');
+            if (installBtn) installBtn.classList.remove('hidden');
+        });
+
+        async function installPWA() {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            }
+            deferredPrompt = null;
+            document.getElementById('pwa-install-btn').classList.add('hidden');
+        }
+
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('pwa-install-btn').classList.add('hidden');
+            showToast('앱이 설치되었습니다! 🎉');
+        });
+
         // --- State ---
         let currentNumbers = [];
         let manualSelection = new Set();
@@ -369,7 +397,7 @@
         const PAGE_SIZE = 20;
         let currentFilteredGames = [];
         let currentWinData = null; 
-        let toastTimeoutId = null; // To manage toast duration
+        let toastTimeoutId = null;
 
         // --- Elements ---
         const historyList = document.getElementById('history-list');
@@ -399,7 +427,6 @@
         const scanBtn = document.getElementById('scan-btn');
 
         function init() {
-            // ... existing init code ...
             const storedHistory = localStorage.getItem('lotto_history');
             if (storedHistory) { historyData = JSON.parse(storedHistory); }
             const storedWinResults = localStorage.getItem('lotto_win_results');
@@ -429,14 +456,13 @@
             if (isNotificationEnabled) { startNotificationScheduler(); }
             updateScanButtonState();
             
-            // Show Splash Screen Logic
             setTimeout(() => {
                 const splash = document.getElementById('splash-screen');
                 if(splash) {
                     splash.style.opacity = '0';
                     setTimeout(() => splash.remove(), 500);
                 }
-            }, 1500); // 1.5s splash screen
+            }, 1500);
         }
 
         // ... [Basic Calculation & UI Functions] ...
@@ -507,18 +533,15 @@
                 { name: "🎲 랜덤 생성", weight: 2, func: () => generateRandomFixed(6) }
             ];
             
-            // Simple random selection of strategy
             const strategy = patterns[Math.floor(Math.random() * patterns.length)];
             let nums = strategy.func();
             
-            // Robust check
             if (!nums || nums.length !== 6 || new Set(nums).size !== 6) {
                 return { numbers: generateRandomFixed(6), name: "🎲 랜덤 생성 (Fallback)" };
             }
             return { numbers: nums.sort((a,b)=>a-b), name: strategy.name };
         }
 
-        // Helpers for Patterns
         function generateRandomFixed(count, exclude = []) {
             const nums = new Set();
             while(nums.size < count) {
@@ -550,8 +573,7 @@
         }
 
         function generateConsecutiveInRange(start, end) {
-            // e.g., 41, 42
-            let n = Math.floor(Math.random() * (end - start)) + start; // ensure n+1 is in range
+            let n = Math.floor(Math.random() * (end - start)) + start; 
             const seed = [n, n+1];
             const remainder = generateRandomFixed(4, seed);
             return [...seed, ...remainder];
@@ -566,10 +588,8 @@
 
         function generateEndingMatch() {
             const digit = Math.floor(Math.random() * 10);
-            // candidates: digit, digit+10, digit+20, digit+30, digit+40 (if <=45)
             const candidates = [digit, digit+10, digit+20, digit+30, digit+40].filter(n => n >= 1 && n <= 45);
-            // Pick 2 from candidates
-            if (candidates.length < 2) return generateRandomFixed(6); // fallback
+            if (candidates.length < 2) return generateRandomFixed(6); 
             
             const shuffled = candidates.sort(() => 0.5 - Math.random());
             const seed = shuffled.slice(0, 2);
@@ -582,7 +602,6 @@
             closeGlobalResult();
             const keyToUse = userApiKey || apiKey;
             if (!keyToUse) {
-                // Failover to Pattern Logic
                 generatePatternLotto();
                 showToast("AI가 영감을 받는 중 잠들었네요 😴 대신 행운의 패턴 번호를 드려요!");
                 return;
@@ -592,7 +611,6 @@
             generatedBallsArea.innerHTML = '';
             
             try {
-                // Modified prompt to avoid simple patterns like "7"
                 const seed = Date.now();
                 const prompt = `Act as a complex lottery number generator algorithm.
 Generate 6 unique numbers between 1 and 45 based on a complex, non-repetitive statistical model.
@@ -621,7 +639,7 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
 
             } catch (err) {
                 console.error(err);
-                generatePatternLotto(); // Failover
+                generatePatternLotto();
                 showToast("AI가 영감을 받는 중 잠들었네요 😴 대신 행운의 랜덤 번호를 드려요!");
             } finally {
                 aiLoader.style.display = 'none';
@@ -637,7 +655,6 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
                 contents: [{
                     parts: [{ text: prompt }]
                 }],
-                // Configuration for randomness
                 generationConfig: {
                     temperature: 0.9,
                     topK: 40,
