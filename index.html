@@ -5,18 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LottoWin - 부자 되기 프로젝트</title>
     
-    <!-- PWA Settings -->
+    <!-- PWA Settings & App Icons -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#059669">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="LottoWin">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <!-- 업로드한 이미지를 아이콘으로 설정 -->
+    <link rel="icon" type="image/jpeg" href="img/app_logo.jpg">
+    <link rel="apple-touch-icon" href="img/app_logo.jpg">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- QR Code Scanner Library -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@700&display=swap');
@@ -36,6 +37,16 @@
             backdrop-filter: blur(5px);
         }
 
+        /* Splash Screen Animation */
+        #splash-screen {
+            transition: opacity 0.5s ease-out, visibility 0.5s;
+        }
+        #splash-screen.hidden-splash {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* Existing Styles ... */
         .lotto-ball {
             width: 3rem;
             height: 3rem;
@@ -159,22 +170,26 @@
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-2">
+
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="fixed inset-0 z-[100] bg-gradient-to-br from-emerald-600 to-teal-800 flex flex-col items-center justify-center">
+        <img src="img/app_logo.jpg" class="w-32 h-32 rounded-3xl shadow-2xl mb-6 animate-bounce" alt="LottoWin Logo">
+        <h1 class="text-3xl font-bold text-white tracking-widest font-[Poppins]">LottoWin</h1>
+        <p class="text-emerald-100 text-sm mt-2">부자의 꿈을 현실로</p>
+    </div>
+
     <div class="main-container max-w-md w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         <!-- Header -->
         <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 text-center shrink-0 flex flex-col items-center relative">
             <button onclick="openSettings()" class="absolute right-4 top-4 text-white text-opacity-80 hover:text-opacity-100 transition"><i class="fas fa-cog"></i></button>
             
-            <!-- Logo Area -->
-            <div class="flex items-center justify-center gap-2 mb-1">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-white drop-shadow-md">
-                    <path d="M12 2L14.5 9H22L16 13.5L18.5 21L12 16.5L5.5 21L8 13.5L2 9H9.5L12 2Z" fill="#FBBF24" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
-                    <circle cx="12" cy="12" r="3" fill="white" fill-opacity="0.9"/>
-                    <text x="12" y="14" font-family="Arial" font-weight="bold" font-size="3" fill="#059669" text-anchor="middle">7</text>
-                </svg>
+            <!-- Logo Area (Updated with User Image) -->
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <img src="img/app_logo.jpg" class="w-10 h-10 rounded-xl shadow-md border-2 border-emerald-400" alt="Logo">
                 <h1 class="text-2xl font-bold text-white tracking-tight" style="font-family: 'Poppins', sans-serif;">LottoWin</h1>
             </div>
             
-            <p class="text-emerald-100 text-xs mb-2 italic">"당신의 하루에 행운이 깃들기를 바랍니다"</p>
+            <p class="text-emerald-100 text-xs mb-3 italic">"당신의 하루에 행운이 깃들기를 바랍니다"</p>
             
             <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-2 py-1 shadow-inner transition-colors hover:bg-opacity-30 gap-2">
                 <div class="flex items-center border-r border-white border-opacity-30 pr-5 relative group cursor-pointer">
@@ -354,6 +369,7 @@
         const PAGE_SIZE = 20;
         let currentFilteredGames = [];
         let currentWinData = null; 
+        let toastTimeoutId = null; // To manage toast duration
 
         // --- Elements ---
         const historyList = document.getElementById('history-list');
@@ -412,6 +428,15 @@
             notificationToggle.checked = isNotificationEnabled;
             if (isNotificationEnabled) { startNotificationScheduler(); }
             updateScanButtonState();
+            
+            // Show Splash Screen Logic
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if(splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => splash.remove(), 500);
+                }
+            }, 1500); // 1.5s splash screen
         }
 
         // ... [Basic Calculation & UI Functions] ...
@@ -567,7 +592,16 @@
             generatedBallsArea.innerHTML = '';
             
             try {
-                const prompt = "Act as a lottery number prediction expert. Generate a single set of 6 unique lucky numbers between 1 and 45. Provide a very brief, one-sentence creative reason for this specific combination in Korean. \n\nOutput ONLY a valid JSON object in this format (no markdown): \n{ \"numbers\": [1, 2, 3, 4, 5, 6], \"reason\": \"이유\" }";
+                // Modified prompt to avoid simple patterns like "7"
+                const seed = Date.now();
+                const prompt = `Act as a complex lottery number generator algorithm.
+Generate 6 unique numbers between 1 and 45 based on a complex, non-repetitive statistical model.
+Avoid simple patterns like multiples of 7 or sequential numbers unless statistically significant.
+Ensure a balanced distribution of decades (10s, 20s, 30s, 40s).
+Current Random Seed: ${seed}
+Provide a creative, data-driven reason for this combination in Korean (e.g., "표준 편차 분석 결과...", "회귀 분석 모델에 따른...").
+Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
+                
                 const responseText = await callGeminiTextAPI(prompt);
                 
                 let result;
@@ -588,7 +622,7 @@
             } catch (err) {
                 console.error(err);
                 generatePatternLotto(); // Failover
-                showToast("AI 통신이 원활하지 않아 패턴 번호를 생성했습니다.");
+                showToast("AI가 영감을 받는 중 잠들었네요 😴 대신 행운의 랜덤 번호를 드려요!");
             } finally {
                 aiLoader.style.display = 'none';
             }
@@ -598,7 +632,19 @@
              const keyToUse = userApiKey || apiKey;
              if (!keyToUse) throw new Error("Missing API Key");
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${keyToUse}`;
-            const payload = { contents: [{ parts: [{ text: prompt }] }] };
+            
+            const payload = {
+                contents: [{
+                    parts: [{ text: prompt }]
+                }],
+                // Configuration for randomness
+                generationConfig: {
+                    temperature: 0.9,
+                    topK: 40,
+                    topP: 0.95
+                }
+            };
+
             const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
             const data = await response.json();
@@ -766,7 +812,19 @@
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast'); document.getElementById('toast-msg').textContent = message;
             const icon = toast.querySelector('i'); if (isError) { toast.classList.remove('bg-gray-800'); toast.classList.add('bg-red-600'); icon.className = "fas fa-exclamation-circle"; } else { toast.classList.remove('bg-red-600'); toast.classList.add('bg-gray-800'); icon.className = "fas fa-check-circle"; }
-            toast.style.opacity = '1'; setTimeout(() => toast.style.opacity = '0', 2500);
+            
+            // 기존 타이머가 있다면 취소
+            if (toastTimeoutId) {
+                clearTimeout(toastTimeoutId);
+            }
+
+            toast.style.opacity = '1';
+
+            // 새로운 타이머 설정
+            toastTimeoutId = setTimeout(() => {
+                toast.style.opacity = '0';
+                toastTimeoutId = null; // 타이머 종료 후 ID 초기화
+            }, 2500);
         }
         function openManualInput() { manualSelection = new Set(); updateManualUI(); const grid = manualInputModal.querySelector('.grid'); grid.innerHTML = ''; for(let i=1; i<=45; i++) { const btn = document.createElement('div'); btn.className = 'select-ball'; btn.textContent = i; btn.onclick = () => toggleManualNumber(i, btn); grid.appendChild(btn); } manualInputModal.classList.remove('hidden'); setTimeout(() => { manualInputModal.classList.add('opacity-100'); manualInputModal.querySelector('div').classList.remove('scale-95'); manualInputModal.querySelector('div').classList.add('scale-100'); }, 10); }
         function toggleManualNumber(num, btn) { if (manualSelection.has(num)) { manualSelection.delete(num); btn.classList.remove('selected'); btn.style.background = ''; btn.style.border = ''; } else { if (manualSelection.size >= 6) { showToast("6개까지만 선택할 수 있습니다.", true); return; } manualSelection.add(num); btn.classList.add('selected'); if (num <= 10) btn.style.background = '#fbc400'; else if (num <= 20) btn.style.background = '#69c'; else if (num <= 30) btn.style.background = '#ff7272'; else if (num <= 40) btn.style.background = '#a5a5a5'; else btn.style.background = '#b0d840'; btn.style.borderColor = 'transparent'; } updateManualUI(); }
