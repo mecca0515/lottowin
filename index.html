@@ -505,7 +505,12 @@
                 { name: "⚡ 40번대 연번", weight: 1, func: () => generateConsecutiveInRange(41, 45) },
                 { name: "⚡ 연번 포함", weight: 1, func: () => generateConsecutiveAny() },
                 { name: "⚡ 끝수 일치", weight: 1, func: () => generateEndingMatch() },
-                { name: "🎲 랜덤 생성", weight: 2, func: () => generateRandomFixed(6) }
+                { name: "🎲 랜덤 생성", weight: 2, func: () => generateRandomFixed(6) },
+                { name: "⚡ 10번대 집중", weight: 1, func: () => generateDecadeFocus(11, 20, 3) },
+                { name: "⚡ 30번대 집중", weight: 1, func: () => generateDecadeFocus(31, 40, 3) },
+                { name: "⚡ 20~30번대 집중", weight: 1, func: () => generateDecadeFocus(21, 40, 4) }, // 20~40 사이에서 4개
+                { name: "⚖️ 저고(Low/High) 균형", weight: 1, func: () => generateLowHighMix() },
+                { name: "🌈 골고루 분포", weight: 1, func: () => generateBalanced() }
             ];
             
             const strategy = patterns[Math.floor(Math.random() * patterns.length)];
