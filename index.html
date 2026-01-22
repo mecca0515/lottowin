@@ -777,7 +777,7 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
             numbers.forEach((num, index) => { const ball = document.createElement('div'); ball.className = `lotto-ball ${getBallColorClass(num)}`; ball.textContent = num; ball.style.animationDelay = `${index * 0.1}s`; generatedBallsArea.appendChild(ball); });
         }
         function showGlobalResult(title, desc, colorClass) {
-            globalRankTitle.textContent = title; globalRankTitle.className = `text-2xl font-bold mb-1 ${colorClass}`; globalRankDesc.innerHTML = desc; 
+            globalRankTitle.textContent = title; globalRankTitle.className = `text-2xl font-bold mb-1 mt-2 ${colorClass}`; globalRankDesc.innerHTML = desc; 
             globalResultOverlay.classList.remove('hidden'); globalResultOverlay.style.opacity = '0'; setTimeout(() => { globalResultOverlay.style.transition = 'opacity 0.3s'; globalResultOverlay.style.opacity = '1'; }, 10);
         }
         function closeGlobalResult() { globalResultOverlay.classList.add('hidden'); }
