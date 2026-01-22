@@ -3,10 +3,10 @@ const ASSETS = [
     './',
     './index.html',
     './manifest.json',
-    'https://cdn.tailwindcss.com',
-    'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js',
-    'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'
+    './js/tailwindcss.js',
+    './js/jsQR.min.js',
+    './js/tesseract.min.js',
+    './css/font-awesome/font-awesome.css'
 ];
 
 self.addEventListener('install', (event) => {
