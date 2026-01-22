@@ -578,6 +578,38 @@
             return [...seed, ...remainder];
         }
 
+        function generateLowHighMix() {
+            // Low: 1~23, High: 24~45 (Rough split)
+            const lowSet = new Set();
+            while(lowSet.size < 3) lowSet.add(Math.floor(Math.random() * 23) + 1);
+            
+            const highSet = new Set();
+            while(highSet.size < 3) highSet.add(Math.floor(Math.random() * (45 - 24 + 1)) + 24);
+            
+            return [...lowSet, ...highSet];
+        }
+
+        function generateBalanced() {
+            // Try to pick at least one from 1-10, 11-20, 21-30, 31-40, 41-45
+            const ranges = [
+                {s: 1, e: 10}, {s: 11, e: 20}, {s: 21, e: 30}, {s: 31, e: 40}, {s: 41, e: 45}
+            ];
+            const nums = new Set();
+            
+            // Pick 1 from each range
+            ranges.forEach(r => {
+                const n = Math.floor(Math.random() * (r.e - r.s + 1)) + r.s;
+                nums.add(n);
+            });
+            
+            // Pick last one freely
+            while(nums.size < 6) {
+                nums.add(Math.floor(Math.random() * 45) + 1);
+            }
+            
+            return Array.from(nums);
+        }
+
         // --- AI Logic ---
         async function generateLottoAI() {
             closeGlobalResult();
