@@ -175,7 +175,7 @@
     <div id="splash-screen" class="fixed inset-0 z-[100] bg-gradient-to-br from-emerald-600 to-teal-800 flex flex-col items-center justify-center">
         <img src="app_logo.png" class="w-32 h-32 rounded-3xl shadow-2xl mb-6 animate-bounce object-cover" alt="LottoWin Logo">
         <h1 class="text-3xl font-bold text-white tracking-widest font-[Poppins]">LottoWin</h1>
-        <p class="text-emerald-100 text-sm mt-2">부자의 꿈을 현실로</p>
+        <p class="text-emerald-100 text-sm mt-2">로또의 꿈을 현실로</p>
     </div>
 
     <div class="main-container max-w-md w-full rounded-2xl shadow-2xl overflow-hidden flex flex-col">
@@ -361,31 +361,6 @@
         let userApiKey = localStorage.getItem('user_gemini_key') || "";
         let isNotificationEnabled = localStorage.getItem('lotto_noti_enabled') === 'true';
 
-        // --- PWA Install Logic ---
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            const installBtn = document.getElementById('pwa-install-btn');
-            if (installBtn) installBtn.classList.remove('hidden');
-        });
-
-        async function installPWA() {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-            }
-            deferredPrompt = null;
-            document.getElementById('pwa-install-btn').classList.add('hidden');
-        }
-
-        window.addEventListener('appinstalled', () => {
-            document.getElementById('pwa-install-btn').classList.add('hidden');
-            showToast('앱이 설치되었습니다! 🎉');
-        });
-
         // --- State ---
         let currentNumbers = [];
         let manualSelection = new Set();
@@ -542,6 +517,7 @@
             return { numbers: nums.sort((a,b)=>a-b), name: strategy.name };
         }
 
+        // Helpers for Patterns
         function generateRandomFixed(count, exclude = []) {
             const nums = new Set();
             while(nums.size < count) {
@@ -649,7 +625,7 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
         async function callGeminiTextAPI(prompt) {
              const keyToUse = userApiKey || apiKey;
              if (!keyToUse) throw new Error("Missing API Key");
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${keyToUse}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`;
             
             const payload = {
                 contents: [{
@@ -859,7 +835,7 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
         function handleImageUpload(e) { const file = e.target.files[0]; if (!file) return; scanLoader.style.display = 'flex'; scanMessage.textContent = "이미지 처리 중..."; scanSubMessage.textContent = "AI가 로또 용지를 분석하고 있습니다"; const reader = new FileReader(); reader.onload = function(event) { const img = new Image(); img.onload = function() { processImage(img); }; img.src = event.target.result; }; reader.readAsDataURL(file); e.target.value = ''; }
         function processImage(img) { const canvas = document.getElementById('scan-canvas'); const context = canvas.getContext('2d'); const scaleFactor = 1.5; canvas.width = img.width * scaleFactor; canvas.height = img.height * scaleFactor; context.scale(scaleFactor, scaleFactor); context.drawImage(img, 0, 0); const imageData = context.getImageData(0, 0, canvas.width, canvas.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { const parsedGames = parseLottoQR(code.data); if (parsedGames && parsedGames.length > 0) { finishScan(parsedGames, "QR 스캔"); return; } } scanMessage.textContent = "AI 분석 중..."; scanSubMessage.textContent = "Gemini가 번호를 읽고 있습니다..."; runGeminiAnalysis(canvas.toDataURL("image/jpeg", 0.8)); }
         async function runGeminiAnalysis(base64Image) { try { const prompt = "Analyze this image and extract ONLY the lottery numbers..."; const text = await callGeminiAPI(prompt, base64Image); const extractedGames = parseGeminiResponse(text); if (extractedGames.length > 0) { finishScan(extractedGames, "AI 스캔"); } else { scanLoader.style.display = 'none'; showToast("숫자를 찾지 못했습니다. 수동 입력을 이용해보세요!", true); } } catch (err) { console.error(err); scanLoader.style.display = 'none'; showToast("분석 중 오류가 발생했습니다. (키 설정 확인 필요)", true); if (err.message.includes('400') || err.message.includes('401') || err.message.includes('403')) { setTimeout(() => openSettings(), 1500); } } }
-        async function callGeminiAPI(prompt, base64Image) { const keyToUse = userApiKey || apiKey; if (!keyToUse) { showToast("API 키가 설정되지 않았습니다...", true); throw new Error("Missing API Key"); } const cleanBase64 = base64Image.split(',')[1]; const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${keyToUse}`; const payload = { contents: [{ parts: [ { text: prompt }, { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } } ] }] }; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) { throw new Error(`Gemini API Error: ${response.status}`); } const data = await response.json(); return data.candidates[0].content.parts[0].text; }
+        async function callGeminiAPI(prompt, base64Image) { const keyToUse = userApiKey || apiKey; if (!keyToUse) { showToast("API 키가 설정되지 않았습니다...", true); throw new Error("Missing API Key"); } const cleanBase64 = base64Image.split(',')[1]; const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`; const payload = { contents: [{ parts: [ { text: prompt }, { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } } ] }] }; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) { throw new Error(`Gemini API Error: ${response.status}`); } const data = await response.json(); return data.candidates[0].content.parts[0].text; }
         function parseGeminiResponse(text) { const games = []; const lines = text.split('\n'); lines.forEach(line => { const numsMatch = line.match(/\d+/g); if (!numsMatch) return; const validNums = numsMatch.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45); const uniqueNums = [...new Set(validNums)]; if (uniqueNums.length >= 6) { const gameNums = uniqueNums.slice(0, 6).sort((a, b) => a - b); let label = '자동'; const labelMatch = line.match(/([A-E])[:.)]/i); if (labelMatch) { label = labelMatch[1].toUpperCase(); } else if (games.length < 5) { const labels = ['A', 'B', 'C', 'D', 'E']; label = labels[games.length]; } games.push({ label: label, numbers: gameNums }); } }); return games; }
         function finishScan(games, method) { scanLoader.style.display = 'none'; closeGlobalResult(); if (games.length > 0) { currentNumbers = games[0].numbers; displayNumbers(currentNumbers); } for (let i = games.length - 1; i >= 0; i--) { const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); addGameToData(games[i].numbers, `${method} ${label}`); } showToast(`${games.length}개의 게임을 추출했습니다!`); }
         function parseLottoQR(url) { try { if (!url.includes('dhlottery.co.kr') || !url.includes('v=')) return null; let params = url.split('v=')[1]; if (!params) return null; if (params.includes('&')) params = params.split('&')[0]; const cleanStr = params.replace(/[^0-9]/g, ''); if (cleanStr.length < 16) return null; const numbersStr = cleanStr.substring(4); const games = []; const gameLabels = ['A', 'B', 'C', 'D', 'E']; for (let i = 0; i < numbersStr.length; i += 12) { const chunk = numbersStr.substring(i, i + 12); if (chunk.length < 12) break; const nums = []; for (let j = 0; j < 12; j += 2) nums.push(parseInt(chunk.substring(j, j + 2))); if (nums.some(n => n < 1 || n > 45)) continue; games.push({ label: gameLabels[games.length] || '?', numbers: nums.sort((a, b) => a - b) }); if (games.length >= 5) break; } return games; } catch (e) { return null; } }
@@ -890,6 +866,7 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
             }
 
             try {
+                // 요청하신 selectPstLt645Info.do API 적용
                 const timestamp = new Date().getTime();
                 const targetUrl = `https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=${round}&_=${timestamp}`;
                 
@@ -897,7 +874,35 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
                 if (!response.ok) throw new Error('Network response was not ok');
                 const jsonResponse = await response.json();
 
-                if (jsonResponse.returnValue === 'success') {
+                // selectPstLt645Info.do 응답 구조 처리
+                if (jsonResponse.data && jsonResponse.data.list && jsonResponse.data.list.length > 0) {
+                    const lottoData = jsonResponse.data.list[0];
+                    
+                    // 날짜 포맷팅 (YYYYMMDD -> YYYY-MM-DD)
+                    const dateStr = String(lottoData.ltRflYmd);
+                    const formattedDate = dateStr.length === 8 ? `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}` : dateStr;
+
+                    const mappedData = {
+                        drwNo: lottoData.ltEpsd, 
+                        drwNoDate: formattedDate,
+                        drwtNo1: lottoData.tm1WnNo, 
+                        drwtNo2: lottoData.tm2WnNo, 
+                        drwtNo3: lottoData.tm3WnNo,
+                        drwtNo4: lottoData.tm4WnNo, 
+                        drwtNo5: lottoData.tm5WnNo, 
+                        drwtNo6: lottoData.tm6WnNo,
+                        bnusNo: lottoData.bnsWnNo
+                    };
+                    
+                    winResults[round] = mappedData;
+                    localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
+                    localStorage.setItem('lotto_current_round', round); 
+                    currentWinData = mappedData; 
+                    renderModalContent(mappedData);
+                    const winArr = [mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6];
+                    checkWinningsInHistory(winArr, mappedData.bnusNo, true);
+                } else if (jsonResponse.returnValue === 'success') {
+                     // 혹시 common.do 구조로 오는 경우를 대비한 폴백
                     const lottoData = jsonResponse;
                     const mappedData = {
                         drwNo: lottoData.drwNo, drwNoDate: lottoData.drwNoDate,
@@ -907,14 +912,16 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
                     };
                     winResults[round] = mappedData;
                     localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
-                    localStorage.setItem('lotto_current_round', round); 
-                    currentWinData = mappedData; 
+                    localStorage.setItem('lotto_current_round', round);
+                    currentWinData = mappedData;
                     renderModalContent(mappedData);
                     const winArr = [mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6];
                     checkWinningsInHistory(winArr, mappedData.bnusNo, true);
-                } else { throw new Error('데이터 형식이 올바르지 않습니다.'); }
+                } else { 
+                    throw new Error('데이터 형식이 올바르지 않습니다.'); 
+                }
             } catch (e) {
-                console.warn("Lotto API Direct Fetch Failed:", e);
+                console.warn("Lotto API Fetch Failed:", e);
                 showToast("데이터를 가져올 수 없어 가상 결과로 대체합니다. (CORS 등)", true);
                 
                 const winNumbers = new Set(); while(winNumbers.size < 6) winNumbers.add(Math.floor(Math.random() * 45) + 1);
@@ -924,7 +931,7 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
                 const simulatedDate = `${year}-${month}-${day} (모의)`;
                 const mockData = { drwNo: round, drwtNo1: winArr[0], drwtNo2: winArr[1], drwtNo3: winArr[2], drwtNo4: winArr[3], drwtNo5: winArr[4], drwtNo6: winArr[5], bnusNo: bonus, drwNoDate: simulatedDate };
                 currentWinData = mockData;
-                winResults[round] = mockData; 
+                winResults[round] = mockData; // Cache mock data
                 localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
                 renderModalContent(mockData);
                 checkWinningsInHistory(winArr, bonus, true);
