@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>부자 되기 프로젝트</title>
+    <title>LottoWin - 부자 되기 프로젝트</title>
     
     <!-- PWA Settings -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#059669">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="로또메이커">
+    <meta name="apple-mobile-web-app-title" content="LottoWin">
     <link rel="apple-touch-icon" href="icon-192.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,7 +19,7 @@
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@700&display=swap');
 
         body {
             font-family: 'Noto Sans KR', sans-serif;
@@ -28,7 +28,7 @@
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
-            -webkit-tap-highlight-color: transparent; /* 모바일 터치 하이라이트 제거 */
+            -webkit-tap-highlight-color: transparent;
         }
 
         .main-container {
@@ -135,7 +135,6 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
         
-        /* Floating Badge Animation */
         @keyframes float-badge {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-3px); }
@@ -143,6 +142,14 @@
         .animate-float-badge {
             animation: float-badge 2s ease-in-out infinite;
         }
+
+        /* Toggle Switch CSS */
+        .toggle-checkbox:checked { right: 0; border-color: #10b981; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
+        .toggle-checkbox { right: 0; z-index: 1; border-color: #e5e7eb; transition: all 0.3s; }
+        .toggle-label { width: 2.5rem; height: 1.25rem; background-color: #d1d5db; border-radius: 9999px; position: relative; cursor: pointer; transition: background-color 0.3s; }
+        .toggle-circle { position: absolute; top: 0.125rem; left: 0.125rem; width: 1rem; height: 1rem; background-color: white; border-radius: 50%; transition: transform 0.3s; }
+        .toggle-checkbox:checked + .toggle-label .toggle-circle { transform: translateX(1.25rem); }
 
         @media (max-width: 640px) {
             .lotto-ball { width: 2.5rem; height: 2.5rem; font-size: 1rem; }
@@ -156,8 +163,19 @@
         <!-- Header -->
         <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 text-center shrink-0 flex flex-col items-center relative">
             <button onclick="openSettings()" class="absolute right-4 top-4 text-white text-opacity-80 hover:text-opacity-100 transition"><i class="fas fa-cog"></i></button>
-            <h1 class="text-xl font-bold text-white mb-1">🍀 부자 되기 프로젝트 💸</h1>
+            
+            <!-- Logo Area -->
+            <div class="flex items-center justify-center gap-2 mb-1">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-white drop-shadow-md">
+                    <path d="M12 2L14.5 9H22L16 13.5L18.5 21L12 16.5L5.5 21L8 13.5L2 9H9.5L12 2Z" fill="#FBBF24" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+                    <circle cx="12" cy="12" r="3" fill="white" fill-opacity="0.9"/>
+                    <text x="12" y="14" font-family="Arial" font-weight="bold" font-size="3" fill="#059669" text-anchor="middle">7</text>
+                </svg>
+                <h1 class="text-2xl font-bold text-white tracking-tight" style="font-family: 'Poppins', sans-serif;">LottoWin</h1>
+            </div>
+            
             <p class="text-emerald-100 text-xs mb-2 italic">"당신의 하루에 행운이 깃들기를 바랍니다"</p>
+            
             <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-2 py-1 shadow-inner transition-colors hover:bg-opacity-30 gap-2">
                 <div class="flex items-center border-r border-white border-opacity-30 pr-5 relative group cursor-pointer">
                     <span class="text-white text-xs mr-1 font-bold">회차 선택</span>
@@ -177,7 +195,6 @@
                 <div id="generated-balls-area" class="flex flex-wrap justify-center items-center w-full gap-2">
                     <span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>
                 </div>
-                <!-- Loading & Result Overlays -->
                 <div id="global-result-overlay" class="absolute inset-0 bg-white flex flex-col justify-center items-center hidden z-20 pb-4">
                     <h2 id="global-rank-title" class="text-lg font-bold mb-1"></h2>
                     <p id="global-rank-desc" class="text-xs text-gray-500 mb-4 text-center px-4"></p>
@@ -190,17 +207,19 @@
                 </div>
             </div>
 
-            <!-- Buttons Area: Increased margin-bottom to avoid badge overlap -->
-            <div class="mb-5">
-                <button onclick="generateLottoAI()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2 text-base transform active:scale-95">
-                    <i class="fas fa-magic"></i> AI 번호 추천 받기
+            <!-- Buttons Area: Split into AI and Pattern -->
+            <div class="mb-4 flex gap-2">
+                <button onclick="generateLottoAI()" class="flex-[3] bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2 text-base transform active:scale-95">
+                    <i class="fas fa-magic"></i> AI 추천
+                </button>
+                <button onclick="generatePatternLotto()" class="flex-[2] bg-white border-2 border-emerald-100 hover:border-emerald-300 text-emerald-700 font-bold py-3 px-4 rounded-xl transition duration-200 shadow-sm flex items-center justify-center gap-2 text-base transform active:scale-95">
+                    <i class="fas fa-bolt"></i> 패턴 생성
                 </button>
             </div>
+            
             <div class="flex gap-2 mb-2 items-center">
-                <!-- Scan Button with Floating Badge -->
                 <button id="scan-btn" onclick="handleScanClick()" class="relative flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-sm overflow-visible" title="이미지/QR 번호 추출">
                     <i class="fas fa-camera"></i> <span>스캔</span>
-                    <!-- API Key Needed Badge -->
                     <span id="key-badge" class="absolute -top-3 -right-2 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full shadow-md hidden animate-float-badge whitespace-nowrap z-10 border border-white">
                         API Key 필요 🔒
                         <span class="absolute bottom-[-4px] left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-red-500"></span>
@@ -250,6 +269,7 @@
         <i class="fas fa-info-circle flex-shrink-0"></i> <span id="toast-msg" class="leading-snug">메시지</span>
     </div>
 
+    <!-- ... (Result, Manual, Delete Modals - No Change) ... -->
     <div id="result-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
             <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-800">당첨 결과 확인</h3><button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button></div>
@@ -274,10 +294,12 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
             <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-800">⚙️ 설정</h3><button onclick="closeSettings()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button></div>
-            <div class="mb-4">
+            
+            <div class="mb-4 pb-4 border-b border-gray-100">
                 <label class="block text-sm font-bold text-gray-700 mb-2">개인 Gemini API 키</label>
                 <input type="password" id="user-api-key" placeholder="AIza..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50">
                 <p class="text-xs text-gray-500 mt-2">
@@ -286,6 +308,20 @@
                     <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-600 underline hover:text-indigo-800 ml-1">키 발급받기</a>
                 </p>
             </div>
+
+            <div class="mb-4 flex items-center justify-between">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700">매주 토요일 알림</label>
+                    <p class="text-xs text-gray-500">밤 9시에 추첨 결과 확인 알림을 보냅니다.</p>
+                </div>
+                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" name="toggle" id="notification-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer hidden" onchange="toggleNotification(this)"/>
+                    <label for="notification-toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer">
+                        <span class="toggle-circle"></span>
+                    </label>
+                </div>
+            </div>
+
             <button onclick="saveApiKey()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl transition">저장하기</button>
         </div>
     </div>
@@ -305,6 +341,7 @@
         // --- Configuration ---
         const apiKey = ""; // System injected fallback key
         let userApiKey = localStorage.getItem('user_gemini_key') || "";
+        let isNotificationEnabled = localStorage.getItem('lotto_noti_enabled') === 'true';
 
         // --- State ---
         let currentNumbers = [];
@@ -341,17 +378,19 @@
         const drawDateSpan = document.getElementById('draw-date');
         const settingsModal = document.getElementById('settings-modal');
         const userApiKeyInput = document.getElementById('user-api-key');
+        const notificationToggle = document.getElementById('notification-toggle');
         const aiLoader = document.getElementById('ai-loader');
         const scanBtn = document.getElementById('scan-btn');
 
         function init() {
+            // ... existing init code ...
             const storedHistory = localStorage.getItem('lotto_history');
             if (storedHistory) { historyData = JSON.parse(storedHistory); }
             const storedWinResults = localStorage.getItem('lotto_win_results');
             if (storedWinResults) { winResults = JSON.parse(storedWinResults); }
 
             const latestRound = calculateCurrentRound();
-            populateRoundSelect(latestRound); // Show up to current round only
+            populateRoundSelect(latestRound); 
 
             const storedRound = localStorage.getItem('lotto_current_round');
             if (storedRound) {
@@ -369,11 +408,13 @@
                 }
             });
 
-            // Init Settings & Buttons
             if (userApiKey) { userApiKeyInput.value = userApiKey; }
+            notificationToggle.checked = isNotificationEnabled;
+            if (isNotificationEnabled) { startNotificationScheduler(); }
             updateScanButtonState();
         }
 
+        // ... [Basic Calculation & UI Functions] ...
         function calculateCurrentRound() {
             const startDate = new Date('2002-12-07T00:00:00'); 
             const today = new Date();
@@ -386,9 +427,7 @@
             roundInput.innerHTML = '';
             for (let i = maxRound; i >= 1; i--) {
                 const option = document.createElement('option');
-                option.value = i;
-                option.textContent = i;
-                option.className = "text-gray-800";
+                option.value = i; option.textContent = i; option.className = "text-gray-800";
                 roundInput.appendChild(option);
             }
         }
@@ -397,44 +436,176 @@
             historyRoundLabel.textContent = `${round}회`;
             const startDate = new Date('2002-12-07T00:00:00');
             const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
-            const year = drawDate.getFullYear();
-            const month = String(drawDate.getMonth() + 1).padStart(2, '0');
-            const day = String(drawDate.getDate()).padStart(2, '0');
+            const year = drawDate.getFullYear(); const month = String(drawDate.getMonth() + 1).padStart(2, '0'); const day = String(drawDate.getDate()).padStart(2, '0');
             drawDateSpan.textContent = `(${year}-${month}-${day})`;
         }
 
         roundInput.addEventListener('change', (e) => {
-            let val = parseInt(e.target.value);
-            currentRound = val;
-            updateRoundInfo(val);
-            localStorage.setItem('lotto_current_round', currentRound);
-            renderHistory(currentRound);
-            closeGlobalResult();
+            let val = parseInt(e.target.value); currentRound = val; updateRoundInfo(val);
+            localStorage.setItem('lotto_current_round', currentRound); renderHistory(currentRound); closeGlobalResult();
         });
 
         function addGameToData(numbers, tag) {
             const game = { id: Date.now() + Math.random(), round: currentRound, numbers: numbers, tag: tag, date: new Date().toISOString() };
-            historyData.unshift(game);
-            saveHistory();
-            renderHistory(currentRound);
+            historyData.unshift(game); saveHistory(); renderHistory(currentRound);
         }
 
         function deleteGameFromData(id) {
-            historyData = historyData.filter(game => game.id !== id);
-            saveHistory();
-            renderHistory(currentRound);
+            historyData = historyData.filter(game => game.id !== id); saveHistory(); renderHistory(currentRound);
         }
 
         function clearCurrentRoundHistory() {
-            historyData = historyData.filter(game => game.round !== currentRound);
-            saveHistory();
-            renderHistory(currentRound);
+            historyData = historyData.filter(game => game.round !== currentRound); saveHistory(); renderHistory(currentRound);
         }
 
         function saveHistory() {
             localStorage.setItem('lotto_history', JSON.stringify(historyData));
         }
 
+        // --- Core: Pattern Generation Logic ---
+        function generatePatternLotto() {
+            closeGlobalResult();
+            const patternData = applyRandomPattern();
+            currentNumbers = patternData.numbers;
+            displayNumbers(currentNumbers);
+            addGameToData(currentNumbers, patternData.name);
+            showToast(`패턴 적용: ${patternData.name}`);
+        }
+
+        function applyRandomPattern() {
+            const patterns = [
+                { name: "⚡ 20번대 집중", weight: 1, func: () => generateDecadeFocus(21, 30, 3) },
+                { name: "⚡ 10&30번대 믹스", weight: 1, func: () => generateMixedDecades(11, 20, 2, 31, 40, 2) },
+                { name: "⚡ 40번대 연번", weight: 1, func: () => generateConsecutiveInRange(41, 45) },
+                { name: "⚡ 연번 포함", weight: 1, func: () => generateConsecutiveAny() },
+                { name: "⚡ 끝수 일치", weight: 1, func: () => generateEndingMatch() },
+                { name: "🎲 랜덤 생성", weight: 2, func: () => generateRandomFixed(6) }
+            ];
+            
+            // Simple random selection of strategy
+            const strategy = patterns[Math.floor(Math.random() * patterns.length)];
+            let nums = strategy.func();
+            
+            // Robust check
+            if (!nums || nums.length !== 6 || new Set(nums).size !== 6) {
+                return { numbers: generateRandomFixed(6), name: "🎲 랜덤 생성 (Fallback)" };
+            }
+            return { numbers: nums.sort((a,b)=>a-b), name: strategy.name };
+        }
+
+        // Helpers for Patterns
+        function generateRandomFixed(count, exclude = []) {
+            const nums = new Set();
+            while(nums.size < count) {
+                let n = Math.floor(Math.random() * 45) + 1;
+                if (!exclude.includes(n)) nums.add(n);
+            }
+            return Array.from(nums);
+        }
+
+        function generateDecadeFocus(start, end, count) {
+            const focusNums = new Set();
+            while(focusNums.size < count) {
+                let n = Math.floor(Math.random() * (end - start + 1)) + start;
+                focusNums.add(n);
+            }
+            const remainder = generateRandomFixed(6 - count, Array.from(focusNums));
+            return [...focusNums, ...remainder];
+        }
+
+        function generateMixedDecades(s1, e1, c1, s2, e2, c2) {
+            const set1 = new Set();
+            while(set1.size < c1) set1.add(Math.floor(Math.random() * (e1 - s1 + 1)) + s1);
+            const set2 = new Set();
+            while(set2.size < c2) set2.add(Math.floor(Math.random() * (e2 - s2 + 1)) + s2);
+            
+            const used = [...set1, ...set2];
+            const remainder = generateRandomFixed(6 - c1 - c2, used);
+            return [...used, ...remainder];
+        }
+
+        function generateConsecutiveInRange(start, end) {
+            // e.g., 41, 42
+            let n = Math.floor(Math.random() * (end - start)) + start; // ensure n+1 is in range
+            const seed = [n, n+1];
+            const remainder = generateRandomFixed(4, seed);
+            return [...seed, ...remainder];
+        }
+
+        function generateConsecutiveAny() {
+            let n = Math.floor(Math.random() * 44) + 1; 
+            const seed = [n, n+1];
+            const remainder = generateRandomFixed(4, seed);
+            return [...seed, ...remainder];
+        }
+
+        function generateEndingMatch() {
+            const digit = Math.floor(Math.random() * 10);
+            // candidates: digit, digit+10, digit+20, digit+30, digit+40 (if <=45)
+            const candidates = [digit, digit+10, digit+20, digit+30, digit+40].filter(n => n >= 1 && n <= 45);
+            // Pick 2 from candidates
+            if (candidates.length < 2) return generateRandomFixed(6); // fallback
+            
+            const shuffled = candidates.sort(() => 0.5 - Math.random());
+            const seed = shuffled.slice(0, 2);
+            const remainder = generateRandomFixed(4, seed);
+            return [...seed, ...remainder];
+        }
+
+        // --- AI Logic ---
+        async function generateLottoAI() {
+            closeGlobalResult();
+            const keyToUse = userApiKey || apiKey;
+            if (!keyToUse) {
+                // Failover to Pattern Logic
+                generatePatternLotto();
+                showToast("AI가 영감을 받는 중 잠들었네요 😴 대신 행운의 패턴 번호를 드려요!");
+                return;
+            }
+
+            aiLoader.style.display = 'flex';
+            generatedBallsArea.innerHTML = '';
+            
+            try {
+                const prompt = "Act as a lottery number prediction expert. Generate a single set of 6 unique lucky numbers between 1 and 45. Provide a very brief, one-sentence creative reason for this specific combination in Korean. \n\nOutput ONLY a valid JSON object in this format (no markdown): \n{ \"numbers\": [1, 2, 3, 4, 5, 6], \"reason\": \"이유\" }";
+                const responseText = await callGeminiTextAPI(prompt);
+                
+                let result;
+                try {
+                    const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+                    result = JSON.parse(cleanText);
+                } catch (e) {
+                    throw new Error("AI 응답 해석 실패");
+                }
+
+                if (!result.numbers || result.numbers.length !== 6) throw new Error("번호 생성 오류");
+
+                currentNumbers = result.numbers.sort((a, b) => a - b);
+                displayNumbers(currentNumbers);
+                addGameToData(currentNumbers, "AI 추천");
+                if (result.reason) showToast("✨ AI: " + result.reason);
+
+            } catch (err) {
+                console.error(err);
+                generatePatternLotto(); // Failover
+                showToast("AI 통신이 원활하지 않아 패턴 번호를 생성했습니다.");
+            } finally {
+                aiLoader.style.display = 'none';
+            }
+        }
+
+        async function callGeminiTextAPI(prompt) {
+             const keyToUse = userApiKey || apiKey;
+             if (!keyToUse) throw new Error("Missing API Key");
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${keyToUse}`;
+            const payload = { contents: [{ parts: [{ text: prompt }] }] };
+            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
+            const data = await response.json();
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        // --- Standard UI Functions ---
         function renderHistory(round) {
             historyList.innerHTML = ''; 
             displayedCount = 0;
@@ -467,70 +638,45 @@
         }
 
         function applyWinStyleToItem(item, winArr, bonus, myNumbers) {
-            let matchCount = 0;
-            let isBonusMatched = false;
-            myNumbers.forEach(num => {
-                if (winArr.includes(num)) matchCount++;
-                else if (num === bonus) isBonusMatched = true;
-            });
-
+            let matchCount = 0; let isBonusMatched = false;
+            myNumbers.forEach(num => { if (winArr.includes(num)) matchCount++; else if (num === bonus) isBonusMatched = true; });
             let rank = 6;
-            if (matchCount === 6) rank = 1;
-            else if (matchCount === 5 && isBonusMatched) rank = 2;
-            else if (matchCount === 5) rank = 3;
-            else if (matchCount === 4) rank = 4;
-            else if (matchCount === 3) rank = 5;
+            if (matchCount === 6) rank = 1; else if (matchCount === 5 && isBonusMatched) rank = 2; else if (matchCount === 5) rank = 3; else if (matchCount === 4) rank = 4; else if (matchCount === 3) rank = 5;
 
             const ballElements = item.querySelectorAll('.ball-container .lotto-ball');
             ballElements.forEach(ball => {
                 const num = parseInt(ball.dataset.num);
-                if (winArr.includes(num)) {
-                    ball.classList.add('matched'); ball.classList.remove('dimmed');
-                } else if (num === bonus) {
+                if (winArr.includes(num)) { ball.classList.add('matched'); ball.classList.remove('dimmed'); }
+                else if (num === bonus) {
                     if (rank === 2) { ball.classList.add('bonus-matched'); ball.classList.remove('dimmed'); }
                     else { ball.classList.remove('matched'); ball.classList.remove('bonus-matched'); ball.classList.add('dimmed'); }
-                } else {
-                    ball.classList.remove('matched'); ball.classList.remove('bonus-matched'); ball.classList.add('dimmed');
-                }
+                } else { ball.classList.remove('matched'); ball.classList.remove('bonus-matched'); ball.classList.add('dimmed'); }
             });
-
-            let rankText = '';
-            let rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; 
-            if (rank === 1) { rankText = '🏆 1등 당첨!'; rankClass = 'text-red-600 pl-2 border-l border-red-200'; }
-            else if (rank === 2) { rankText = '🥈 2등 당첨!'; rankClass = 'text-orange-600 pl-2 border-l border-orange-200'; }
-            else if (rank === 3) { rankText = '🥉 3등 당첨!'; rankClass = 'text-yellow-600 pl-2 border-l border-yellow-200'; }
-            else if (rank === 4) { rankText = '4등 (5만원)'; rankClass = 'text-blue-600 pl-2 border-l border-blue-200'; }
-            else if (rank === 5) { rankText = '5등 (5천원)'; rankClass = 'text-green-600 pl-2 border-l border-green-200'; }
-            else { rankText = '낙첨'; rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; }
 
             const rankBadge = item.querySelector('.rank-badge');
             if (rankBadge) {
-                rankBadge.textContent = rankText;
-                rankBadge.className = `rank-badge text-[10px] font-bold ml-2 ${rankClass}`;
-                rankBadge.classList.remove('hidden');
+                let rankText = ''; let rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; 
+                if (rank === 1) { rankText = '🏆 1등 당첨!'; rankClass = 'text-red-600 pl-2 border-l border-red-200'; }
+                else if (rank === 2) { rankText = '🥈 2등 당첨!'; rankClass = 'text-orange-600 pl-2 border-l border-orange-200'; }
+                else if (rank === 3) { rankText = '🥉 3등 당첨!'; rankClass = 'text-yellow-600 pl-2 border-l border-yellow-200'; }
+                else if (rank === 4) { rankText = '4등 (5만원)'; rankClass = 'text-blue-600 pl-2 border-l border-blue-200'; }
+                else if (rank === 5) { rankText = '5등 (5천원)'; rankClass = 'text-green-600 pl-2 border-l border-green-200'; }
+                else { rankText = '낙첨'; rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; }
+                
+                rankBadge.textContent = rankText; rankBadge.className = `rank-badge text-[10px] font-bold ml-2 ${rankClass}`; rankBadge.classList.remove('hidden');
             }
         }
 
         function calculateAndShowSummary(winData) {
             const winArr = [winData.drwtNo1, winData.drwtNo2, winData.drwtNo3, winData.drwtNo4, winData.drwtNo5, winData.drwtNo6];
             const bonus = winData.bnusNo;
-            let counts = { 1:0, 2:0, 3:0, 4:0, 5:0, fail:0 };
-            let bestRank = 6;
+            let counts = { 1:0, 2:0, 3:0, 4:0, 5:0, fail:0 }; let bestRank = 6;
             currentFilteredGames.forEach(game => {
-                const nums = game.numbers;
-                let matches = nums.filter(n => winArr.includes(n)).length;
-                let bonusMatch = nums.includes(bonus);
-                let rank = 6;
-                if(matches === 6) rank = 1;
-                else if(matches === 5 && bonusMatch) rank = 2;
-                else if(matches === 5) rank = 3;
-                else if(matches === 4) rank = 4;
-                else if(matches === 3) rank = 5;
-                if(rank < 6) counts[rank]++; else counts.fail++;
-                if(rank < bestRank) bestRank = rank;
+                const nums = game.numbers; let matches = nums.filter(n => winArr.includes(n)).length; let bonusMatch = nums.includes(bonus); let rank = 6;
+                if(matches === 6) rank = 1; else if(matches === 5 && bonusMatch) rank = 2; else if(matches === 5) rank = 3; else if(matches === 4) rank = 4; else if(matches === 3) rank = 5;
+                if(rank < 6) counts[rank]++; else counts.fail++; if(rank < bestRank) bestRank = rank;
             });
-            const totalWins = counts[1] + counts[2] + counts[3] + counts[4] + counts[5];
-            displayGlobalResult(bestRank, totalWins, counts);
+            const totalWins = counts[1] + counts[2] + counts[3] + counts[4] + counts[5]; displayGlobalResult(bestRank, totalWins, counts);
         }
 
         function displayGlobalResult(bestRank, totalWins, counts) {
@@ -541,35 +687,22 @@
             else if (bestRank === 4) { title = "🍀 4등 당첨 🍀"; desc = "소소한 행복! 5만원 축하드려요."; colorClass = "text-blue-600"; }
             else if (bestRank === 5) { title = "🍀 5등 당첨 🍀"; desc = "본전은 찾으셨네요! 다음을 노려보세요."; colorClass = "text-green-600"; }
             else { title = "꽝.. 다음 기회에.. 😭"; desc = "아쉽지만 이번엔 운이 없었네요. 힘내세요!"; colorClass = "text-gray-500"; }
-            
             if (totalWins > 0) {
                  let summary = `총 <b class="text-indigo-600">${totalWins}</b>건 당첨! (`;
-                 let details = [];
-                 if(counts[1] > 0) details.push(`1등:${counts[1]}건`);
-                 if(counts[2] > 0) details.push(`2등:${counts[2]}건`);
-                 if(counts[3] > 0) details.push(`3등:${counts[3]}건`);
-                 if(counts[4] > 0) details.push(`4등:${counts[4]}건`);
-                 if(counts[5] > 0) details.push(`5등:${counts[5]}건`);
-                 summary += details.join(', ') + ")";
-                 desc += `<br><span class="mt-1 block text-gray-600 text-xs">${summary}</span>`;
-            }
-            showGlobalResult(title, desc, colorClass);
+                 let details = []; if(counts[1] > 0) details.push(`1등:${counts[1]}건`); if(counts[2] > 0) details.push(`2등:${counts[2]}건`); if(counts[3] > 0) details.push(`3등:${counts[3]}건`); if(counts[4] > 0) details.push(`4등:${counts[4]}건`); if(counts[5] > 0) details.push(`5등:${counts[5]}건`);
+                 summary += details.join(', ') + ")"; desc += `<br><span class="mt-1 block text-gray-600 text-xs">${summary}</span>`;
+            } showGlobalResult(title, desc, colorClass);
         }
 
         function createHistoryItemElement(game) {
             const item = document.createElement('div');
-            item.dataset.numbers = JSON.stringify(game.numbers);
-            item.dataset.id = game.id;
+            item.dataset.numbers = JSON.stringify(game.numbers); item.dataset.id = game.id;
             item.className = 'history-item bg-white bg-opacity-80 p-2 rounded-lg border border-gray-100 flex flex-col shadow-sm items-start';
             const contentRow = document.createElement('div'); contentRow.className = 'flex justify-between w-full items-center';
             const leftDiv = document.createElement('div'); leftDiv.className = 'flex flex-col';
             const ballsContainer = document.createElement('div'); ballsContainer.className = 'flex ball-container items-center gap-1';
             game.numbers.forEach(num => {
-                const smallBall = document.createElement('div');
-                smallBall.className = `lotto-ball small-ball ${getBallColorClass(num)}`;
-                smallBall.textContent = num;
-                smallBall.dataset.num = num;
-                ballsContainer.appendChild(smallBall);
+                const smallBall = document.createElement('div'); smallBall.className = `lotto-ball small-ball ${getBallColorClass(num)}`; smallBall.textContent = num; smallBall.dataset.num = num; ballsContainer.appendChild(smallBall);
             });
             leftDiv.appendChild(ballsContainer);
             
@@ -580,598 +713,89 @@
                 if (game.tag.includes('스캔') || game.tag.includes('분석')) { colorClass = 'text-teal-600'; icon = '⚡ '; }
                 else if (game.tag.includes('수동')) { colorClass = 'text-orange-500'; icon = '👆 '; }
                 else if (game.tag.includes('AI')) { colorClass = 'text-purple-600'; icon = '✨ '; }
-                else if (game.tag.includes('랜덤')) { colorClass = 'text-gray-500'; icon = '🎲 '; }
+                else if (game.tag.includes('랜덤') || game.tag.includes('패턴')) { colorClass = 'text-blue-500'; icon = '⚡ '; }
                 tagSpan.className = `text-[10px] font-bold ${colorClass}`; tagSpan.textContent = icon + game.tag;
                 metaDiv.appendChild(tagSpan);
                 const rankSpan = document.createElement('span'); rankSpan.className = 'rank-badge text-[10px] font-bold ml-2 hidden'; 
-                metaDiv.appendChild(rankSpan);
-                leftDiv.appendChild(metaDiv);
+                metaDiv.appendChild(rankSpan); leftDiv.appendChild(metaDiv);
             }
             const rightDiv = document.createElement('div'); rightDiv.className = 'flex flex-col items-end gap-1';
-            const dateObj = new Date(game.date);
-            const timeStr = dateObj.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            const dateObj = new Date(game.date); const timeStr = dateObj.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
             const timeSpan = document.createElement('span'); timeSpan.className = 'text-xs text-gray-400 whitespace-nowrap'; timeSpan.textContent = timeStr;
             rightDiv.appendChild(timeSpan);
             const delBtn = document.createElement('button'); delBtn.className = 'delete-btn text-gray-400 hover:text-red-500 p-1';
-            delBtn.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>';
-            delBtn.onclick = function() { openDeleteConfirmModal('SINGLE', game.id); };
-            rightDiv.appendChild(delBtn);
-            contentRow.appendChild(leftDiv); contentRow.appendChild(rightDiv); item.appendChild(contentRow);
+            delBtn.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>'; delBtn.onclick = function() { openDeleteConfirmModal('SINGLE', game.id); };
+            rightDiv.appendChild(delBtn); contentRow.appendChild(leftDiv); contentRow.appendChild(rightDiv); item.appendChild(contentRow);
             return item;
         }
 
-        function generateLotto() {
-            closeGlobalResult(); 
-            const numbers = new Set();
-            while (numbers.size < 6) { numbers.add(Math.floor(Math.random() * 45) + 1); }
-            currentNumbers = Array.from(numbers).sort((a, b) => a - b);
-            displayNumbers(currentNumbers);
-            addGameToData(currentNumbers, "랜덤 생성");
-        }
-
-        async function generateLottoAI() {
-            closeGlobalResult();
-            
-            // Key check for AI generation fallback
-            const keyToUse = userApiKey || apiKey;
-            if (!keyToUse) {
-                // Fallback to random with a "sensible" message
-                generateLotto();
-                showToast("AI가 잠시 휴식 중이라, 우주의 기운을 모아 랜덤으로 뽑았습니다! 🌌");
-                return;
-            }
-
-            // Show loader
-            aiLoader.style.display = 'flex';
-            generatedBallsArea.innerHTML = '';
-            
-            try {
-                const prompt = "Act as a lottery number prediction expert. Generate a single set of 6 unique lucky numbers between 1 and 45. Provide a very brief, one-sentence creative reason for this specific combination in Korean. \n\nOutput ONLY a valid JSON object in this format (no markdown): \n{ \"numbers\": [1, 2, 3, 4, 5, 6], \"reason\": \"이유\" }";
-                
-                const responseText = await callGeminiTextAPI(prompt);
-                
-                // Parse JSON
-                let result;
-                try {
-                    const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-                    result = JSON.parse(cleanText);
-                } catch (e) {
-                    console.error("JSON Parse Error:", e);
-                    throw new Error("AI 응답을 해석할 수 없습니다.");
-                }
-
-                if (!result.numbers || result.numbers.length !== 6) {
-                    throw new Error("올바른 번호가 생성되지 않았습니다.");
-                }
-
-                currentNumbers = result.numbers.sort((a, b) => a - b);
-                displayNumbers(currentNumbers);
-                addGameToData(currentNumbers, "AI 추천");
-                
-                if (result.reason) {
-                    showToast("✨ AI: " + result.reason);
-                }
-
-            } catch (err) {
-                console.error(err);
-                // Failover to random if actual API call fails
-                generateLotto();
-                showToast("AI 통신 오류로 랜덤 번호를 생성했습니다.", true);
-            } finally {
-                aiLoader.style.display = 'none';
-            }
-        }
-
-        async function callGeminiTextAPI(prompt) {
-             const keyToUse = userApiKey || apiKey;
-             // We checked key existence in generateLottoAI, but double check here
-             if (!keyToUse) throw new Error("Missing API Key");
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`;
-            
-            const payload = {
-                contents: [{
-                    parts: [{ text: prompt }]
-                }]
-            };
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                 if (response.status === 400 || response.status === 403) {
-                     // Optionally redirect to settings, but user might be confused if random gen happened
-                 }
-                throw new Error(`Gemini API Error: ${response.status}`);
-            }
-            const data = await response.json();
-            return data.candidates[0].content.parts[0].text;
-        }
-
+        // [Utility Functions]
         function getBallColorClass(num) {
-            num = parseInt(num);
-            if (num <= 10) return 'ball-yellow'; if (num <= 20) return 'ball-blue';
-            if (num <= 30) return 'ball-red'; if (num <= 40) return 'ball-gray'; return 'ball-green';
+            num = parseInt(num); if (num <= 10) return 'ball-yellow'; if (num <= 20) return 'ball-blue'; if (num <= 30) return 'ball-red'; if (num <= 40) return 'ball-gray'; return 'ball-green';
         }
-
         function displayNumbers(numbers) {
             generatedBallsArea.innerHTML = '';
-            numbers.forEach((num, index) => {
-                const ball = document.createElement('div');
-                ball.className = `lotto-ball ${getBallColorClass(num)}`;
-                ball.textContent = num;
-                ball.style.animationDelay = `${index * 0.1}s`;
-                generatedBallsArea.appendChild(ball);
-            });
+            numbers.forEach((num, index) => { const ball = document.createElement('div'); ball.className = `lotto-ball ${getBallColorClass(num)}`; ball.textContent = num; ball.style.animationDelay = `${index * 0.1}s`; generatedBallsArea.appendChild(ball); });
         }
-
-        function showGlobalResult(bestRankText, desc, colorClass) {
-            globalRankTitle.textContent = bestRankText;
-            globalRankTitle.className = `text-2xl font-bold mb-1 ${colorClass}`;
-            globalRankDesc.innerHTML = desc; 
-            globalResultOverlay.classList.remove('hidden');
-            globalResultOverlay.style.opacity = '0';
-            setTimeout(() => { globalResultOverlay.style.transition = 'opacity 0.3s'; globalResultOverlay.style.opacity = '1'; }, 10);
+        function showGlobalResult(title, desc, colorClass) {
+            globalRankTitle.textContent = title; globalRankTitle.className = `text-2xl font-bold mb-1 ${colorClass}`; globalRankDesc.innerHTML = desc; 
+            globalResultOverlay.classList.remove('hidden'); globalResultOverlay.style.opacity = '0'; setTimeout(() => { globalResultOverlay.style.transition = 'opacity 0.3s'; globalResultOverlay.style.opacity = '1'; }, 10);
         }
-
         function closeGlobalResult() { globalResultOverlay.classList.add('hidden'); }
-
+        
+        // ... (Modal/Toast/Settings/Scan UI functions remain same as before, ensuring robust handling) ...
         function openDeleteConfirmModal(type, id = null) {
             const currentRoundCount = historyData.filter(g => g.round === currentRound).length;
             if (type === 'ALL' && currentRoundCount === 0) { showToast("삭제할 이번 회차 기록이 없습니다."); return; }
             deleteTargetId = id; 
             if (type === 'ALL') { deleteModalTitle.textContent = `🗑️ ${currentRound}회차 기록 전체 삭제`; deleteModalDesc.innerHTML = `정말 <strong>${currentRound}회차</strong>의 모든 번호 생성 기록을 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.`; }
             else { deleteModalTitle.textContent = "🗑️ 기록 삭제"; deleteModalDesc.innerHTML = "선택한 번호 기록을 삭제하시겠습니까?"; }
-            deleteConfirmModal.classList.remove('hidden');
-            setTimeout(() => { deleteConfirmModal.classList.add('opacity-100'); deleteConfirmModal.querySelector('div').classList.remove('scale-95'); deleteConfirmModal.querySelector('div').classList.add('scale-100'); }, 10);
+            deleteConfirmModal.classList.remove('hidden'); setTimeout(() => { deleteConfirmModal.classList.add('opacity-100'); deleteConfirmModal.querySelector('div').classList.remove('scale-95'); deleteConfirmModal.querySelector('div').classList.add('scale-100'); }, 10);
         }
-
-        function closeDeleteConfirmModal() {
-            deleteConfirmModal.classList.remove('opacity-100');
-            deleteConfirmModal.querySelector('div').classList.remove('scale-100');
-            deleteConfirmModal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => { deleteConfirmModal.classList.add('hidden'); }, 300);
-            deleteTargetId = null;
-        }
-
+        function closeDeleteConfirmModal() { deleteConfirmModal.classList.remove('opacity-100'); deleteConfirmModal.querySelector('div').classList.remove('scale-100'); deleteConfirmModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { deleteConfirmModal.classList.add('hidden'); }, 300); deleteTargetId = null; }
         function confirmDelete() {
             if (deleteTargetId) { deleteGameFromData(deleteTargetId); showToast("기록이 삭제되었습니다."); }
             else { clearCurrentRoundHistory(); generatedBallsArea.innerHTML = '<span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>'; currentNumbers = []; showToast(`${currentRound}회차 기록이 모두 삭제되었습니다.`); }
             closeDeleteConfirmModal();
         }
-
         function copyNumbers() {
             if (currentNumbers.length === 0) { showToast("먼저 번호를 생성해주세요."); return; }
-            const textToCopy = currentNumbers.join(', ');
-            const textArea = document.createElement("textarea"); textArea.value = textToCopy; textArea.style.position = 'fixed'; textArea.style.left = '-9999px';
-            document.body.appendChild(textArea); textArea.focus(); textArea.select();
-            try { document.execCommand('copy'); showToast("번호가 복사되었습니다: " + textToCopy); } catch (err) { showToast("복사에 실패했습니다."); }
-            document.body.removeChild(textArea);
+            const textToCopy = currentNumbers.join(', '); const textArea = document.createElement("textarea"); textArea.value = textToCopy; textArea.style.position = 'fixed'; textArea.style.left = '-9999px'; document.body.appendChild(textArea); textArea.focus(); textArea.select();
+            try { document.execCommand('copy'); showToast("번호가 복사되었습니다: " + textToCopy); } catch (err) { showToast("복사에 실패했습니다."); } document.body.removeChild(textArea);
         }
-
         function showToast(message, isError = false) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toast-msg').textContent = message;
-            
-            const icon = toast.querySelector('i');
-            if (isError) { 
-                toast.classList.remove('bg-gray-800'); toast.classList.add('bg-red-600'); 
-                icon.className = "fas fa-exclamation-circle";
-            } else { 
-                toast.classList.remove('bg-red-600'); toast.classList.add('bg-gray-800'); 
-                icon.className = "fas fa-check-circle";
-            }
-            
-            toast.style.opacity = '1'; 
-            setTimeout(() => toast.style.opacity = '0', 2500);
+            const toast = document.getElementById('toast'); document.getElementById('toast-msg').textContent = message;
+            const icon = toast.querySelector('i'); if (isError) { toast.classList.remove('bg-gray-800'); toast.classList.add('bg-red-600'); icon.className = "fas fa-exclamation-circle"; } else { toast.classList.remove('bg-red-600'); toast.classList.add('bg-gray-800'); icon.className = "fas fa-check-circle"; }
+            toast.style.opacity = '1'; setTimeout(() => toast.style.opacity = '0', 2500);
         }
-
-        function openManualInput() {
-            manualSelection = new Set(); updateManualUI();
-            const grid = manualInputModal.querySelector('.grid'); grid.innerHTML = '';
-            for(let i=1; i<=45; i++) { const btn = document.createElement('div'); btn.className = 'select-ball'; btn.textContent = i; btn.onclick = () => toggleManualNumber(i, btn); grid.appendChild(btn); }
-            manualInputModal.classList.remove('hidden'); setTimeout(() => { manualInputModal.classList.add('opacity-100'); manualInputModal.querySelector('div').classList.remove('scale-95'); manualInputModal.querySelector('div').classList.add('scale-100'); }, 10);
-        }
-
-        function toggleManualNumber(num, btn) {
-            if (manualSelection.has(num)) { manualSelection.delete(num); btn.classList.remove('selected'); btn.style.background = ''; btn.style.border = ''; }
-            else { if (manualSelection.size >= 6) { showToast("6개까지만 선택할 수 있습니다.", true); return; } manualSelection.add(num); btn.classList.add('selected'); if (num <= 10) btn.style.background = '#fbc400'; else if (num <= 20) btn.style.background = '#69c'; else if (num <= 30) btn.style.background = '#ff7272'; else if (num <= 40) btn.style.background = '#a5a5a5'; else btn.style.background = '#b0d840'; btn.style.borderColor = 'transparent'; }
-            updateManualUI();
-        }
-
-        function updateManualUI() {
-            document.getElementById('manual-count').textContent = manualSelection.size;
-            const saveBtn = document.getElementById('manual-save-btn');
-            if (manualSelection.size === 6) { saveBtn.disabled = false; saveBtn.classList.remove('bg-gray-300', 'cursor-not-allowed'); saveBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700'); }
-            else { saveBtn.disabled = true; saveBtn.classList.add('bg-gray-300', 'cursor-not-allowed'); saveBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700'); }
-        }
-
-        function resetManualSelection() {
-            manualSelection.clear();
-            const btns = manualInputModal.querySelectorAll('.select-ball');
-            btns.forEach(btn => { btn.classList.remove('selected'); btn.style.background = ''; btn.style.borderColor = ''; });
-            updateManualUI();
-        }
-
-        function saveManualInput() {
-            if (manualSelection.size !== 6) return;
-            currentNumbers = Array.from(manualSelection).sort((a, b) => a - b);
-            displayNumbers(currentNumbers); addGameToData(currentNumbers, "수동 입력"); closeManualInput(); showToast("수동 입력이 완료되었습니다!");
-        }
-
-        function closeManualInput() {
-            manualInputModal.classList.remove('opacity-100'); manualInputModal.querySelector('div').classList.remove('scale-100'); manualInputModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { manualInputModal.classList.add('hidden'); }, 300);
-        }
-
-        // --- Settings Logic ---
-        function openSettings() {
-            settingsModal.classList.remove('hidden');
-            setTimeout(() => {
-                settingsModal.classList.add('opacity-100');
-                settingsModal.querySelector('div').classList.remove('scale-95');
-                settingsModal.querySelector('div').classList.add('scale-100');
-            }, 10);
-            if (userApiKey) { userApiKeyInput.value = userApiKey; }
-        }
-
-        function closeSettings() {
-            settingsModal.classList.remove('opacity-100');
-            settingsModal.querySelector('div').classList.remove('scale-100');
-            settingsModal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => { settingsModal.classList.add('hidden'); }, 300);
-        }
-
-        function saveApiKey() {
-            const inputKey = userApiKeyInput.value.trim();
-            userApiKey = inputKey;
-            localStorage.setItem('user_gemini_key', inputKey);
-            showToast("API 키가 저장되었습니다.");
-            closeSettings();
-            updateScanButtonState(); // Update UI
-        }
-
-        function updateScanButtonState() {
-            const hasKey = userApiKey || apiKey;
-            const scanBtn = document.getElementById('scan-btn');
-            const keyBadge = document.getElementById('key-badge');
-            
-            // Text remains "스캔", Icon remains camera
-            
-            if (hasKey) {
-                scanBtn.classList.remove('bg-gray-400');
-                scanBtn.classList.add('bg-teal-500', 'hover:bg-teal-600');
-                keyBadge.classList.add('hidden');
-            } else {
-                // Grayed out but clickable
-                scanBtn.classList.remove('bg-teal-500', 'hover:bg-teal-600');
-                scanBtn.classList.add('bg-gray-400');
-                keyBadge.classList.remove('hidden');
-            }
-        }
-
-        function handleScanClick() {
-            const hasKey = userApiKey || apiKey;
-            if (!hasKey) {
-                showToast("스캔 기능을 사용하려면 설정(⚙️)에서 API Key를 입력해주세요.", true);
-            } else {
-                triggerImageUpload();
-            }
-        }
-
+        function openManualInput() { manualSelection = new Set(); updateManualUI(); const grid = manualInputModal.querySelector('.grid'); grid.innerHTML = ''; for(let i=1; i<=45; i++) { const btn = document.createElement('div'); btn.className = 'select-ball'; btn.textContent = i; btn.onclick = () => toggleManualNumber(i, btn); grid.appendChild(btn); } manualInputModal.classList.remove('hidden'); setTimeout(() => { manualInputModal.classList.add('opacity-100'); manualInputModal.querySelector('div').classList.remove('scale-95'); manualInputModal.querySelector('div').classList.add('scale-100'); }, 10); }
+        function toggleManualNumber(num, btn) { if (manualSelection.has(num)) { manualSelection.delete(num); btn.classList.remove('selected'); btn.style.background = ''; btn.style.border = ''; } else { if (manualSelection.size >= 6) { showToast("6개까지만 선택할 수 있습니다.", true); return; } manualSelection.add(num); btn.classList.add('selected'); if (num <= 10) btn.style.background = '#fbc400'; else if (num <= 20) btn.style.background = '#69c'; else if (num <= 30) btn.style.background = '#ff7272'; else if (num <= 40) btn.style.background = '#a5a5a5'; else btn.style.background = '#b0d840'; btn.style.borderColor = 'transparent'; } updateManualUI(); }
+        function updateManualUI() { document.getElementById('manual-count').textContent = manualSelection.size; const saveBtn = document.getElementById('manual-save-btn'); if (manualSelection.size === 6) { saveBtn.disabled = false; saveBtn.classList.remove('bg-gray-300', 'cursor-not-allowed'); saveBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700'); } else { saveBtn.disabled = true; saveBtn.classList.add('bg-gray-300', 'cursor-not-allowed'); saveBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700'); } }
+        function resetManualSelection() { manualSelection.clear(); const btns = manualInputModal.querySelectorAll('.select-ball'); btns.forEach(btn => { btn.classList.remove('selected'); btn.style.background = ''; btn.style.borderColor = ''; }); updateManualUI(); }
+        function saveManualInput() { if (manualSelection.size !== 6) return; currentNumbers = Array.from(manualSelection).sort((a, b) => a - b); displayNumbers(currentNumbers); addGameToData(currentNumbers, "수동 입력"); closeManualInput(); showToast("수동 입력이 완료되었습니다!"); }
+        function closeManualInput() { manualInputModal.classList.remove('opacity-100'); manualInputModal.querySelector('div').classList.remove('scale-100'); manualInputModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { manualInputModal.classList.add('hidden'); }, 300); }
+        
+        function openSettings() { settingsModal.classList.remove('hidden'); setTimeout(() => { settingsModal.classList.add('opacity-100'); settingsModal.querySelector('div').classList.remove('scale-95'); settingsModal.querySelector('div').classList.add('scale-100'); }, 10); if (userApiKey) { userApiKeyInput.value = userApiKey; } notificationToggle.checked = isNotificationEnabled; }
+        function closeSettings() { settingsModal.classList.remove('opacity-100'); settingsModal.querySelector('div').classList.remove('scale-100'); settingsModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { settingsModal.classList.add('hidden'); }, 300); }
+        function saveApiKey() { const inputKey = userApiKeyInput.value.trim(); userApiKey = inputKey; localStorage.setItem('user_gemini_key', inputKey); showToast("설정이 저장되었습니다."); closeSettings(); updateScanButtonState(); }
+        function updateScanButtonState() { const hasKey = userApiKey || apiKey; const scanBtn = document.getElementById('scan-btn'); const keyBadge = document.getElementById('key-badge'); if (hasKey) { scanBtn.classList.remove('bg-gray-400'); scanBtn.classList.add('bg-teal-500', 'hover:bg-teal-600'); keyBadge.classList.add('hidden'); } else { scanBtn.classList.remove('bg-teal-500', 'hover:bg-teal-600'); scanBtn.classList.add('bg-gray-400'); keyBadge.classList.remove('hidden'); } }
+        function handleScanClick() { const hasKey = userApiKey || apiKey; if (!hasKey) { showToast("스캔 기능을 사용하려면 설정(⚙️)에서 API Key를 입력해주세요.", true); } else { triggerImageUpload(); } }
         function triggerImageUpload() { document.getElementById('image-input').click(); }
+        function handleImageUpload(e) { const file = e.target.files[0]; if (!file) return; scanLoader.style.display = 'flex'; scanMessage.textContent = "이미지 처리 중..."; scanSubMessage.textContent = "AI가 로또 용지를 분석하고 있습니다"; const reader = new FileReader(); reader.onload = function(event) { const img = new Image(); img.onload = function() { processImage(img); }; img.src = event.target.result; }; reader.readAsDataURL(file); e.target.value = ''; }
+        function processImage(img) { const canvas = document.getElementById('scan-canvas'); const context = canvas.getContext('2d'); const scaleFactor = 1.5; canvas.width = img.width * scaleFactor; canvas.height = img.height * scaleFactor; context.scale(scaleFactor, scaleFactor); context.drawImage(img, 0, 0); const imageData = context.getImageData(0, 0, canvas.width, canvas.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { const parsedGames = parseLottoQR(code.data); if (parsedGames && parsedGames.length > 0) { finishScan(parsedGames, "QR 스캔"); return; } } scanMessage.textContent = "AI 분석 중..."; scanSubMessage.textContent = "Gemini가 번호를 읽고 있습니다..."; runGeminiAnalysis(canvas.toDataURL("image/jpeg", 0.8)); }
+        async function runGeminiAnalysis(base64Image) { try { const prompt = "Analyze this image and extract ONLY the lottery numbers..."; const text = await callGeminiAPI(prompt, base64Image); const extractedGames = parseGeminiResponse(text); if (extractedGames.length > 0) { finishScan(extractedGames, "AI 스캔"); } else { scanLoader.style.display = 'none'; showToast("숫자를 찾지 못했습니다. 수동 입력을 이용해보세요!", true); } } catch (err) { console.error(err); scanLoader.style.display = 'none'; showToast("분석 중 오류가 발생했습니다. (키 설정 확인 필요)", true); if (err.message.includes('400') || err.message.includes('401') || err.message.includes('403')) { setTimeout(() => openSettings(), 1500); } } }
+        async function callGeminiAPI(prompt, base64Image) { const keyToUse = userApiKey || apiKey; if (!keyToUse) { showToast("API 키가 설정되지 않았습니다...", true); throw new Error("Missing API Key"); } const cleanBase64 = base64Image.split(',')[1]; const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${keyToUse}`; const payload = { contents: [{ parts: [ { text: prompt }, { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } } ] }] }; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) { throw new Error(`Gemini API Error: ${response.status}`); } const data = await response.json(); return data.candidates[0].content.parts[0].text; }
+        function parseGeminiResponse(text) { const games = []; const lines = text.split('\n'); lines.forEach(line => { const numsMatch = line.match(/\d+/g); if (!numsMatch) return; const validNums = numsMatch.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45); const uniqueNums = [...new Set(validNums)]; if (uniqueNums.length >= 6) { const gameNums = uniqueNums.slice(0, 6).sort((a, b) => a - b); let label = '자동'; const labelMatch = line.match(/([A-E])[:.)]/i); if (labelMatch) { label = labelMatch[1].toUpperCase(); } else if (games.length < 5) { const labels = ['A', 'B', 'C', 'D', 'E']; label = labels[games.length]; } games.push({ label: label, numbers: gameNums }); } }); return games; }
+        function finishScan(games, method) { scanLoader.style.display = 'none'; closeGlobalResult(); if (games.length > 0) { currentNumbers = games[0].numbers; displayNumbers(currentNumbers); } for (let i = games.length - 1; i >= 0; i--) { const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); addGameToData(games[i].numbers, `${method} ${label}`); } showToast(`${games.length}개의 게임을 추출했습니다!`); }
+        function parseLottoQR(url) { try { if (!url.includes('dhlottery.co.kr') || !url.includes('v=')) return null; let params = url.split('v=')[1]; if (!params) return null; if (params.includes('&')) params = params.split('&')[0]; const cleanStr = params.replace(/[^0-9]/g, ''); if (cleanStr.length < 16) return null; const numbersStr = cleanStr.substring(4); const games = []; const gameLabels = ['A', 'B', 'C', 'D', 'E']; for (let i = 0; i < numbersStr.length; i += 12) { const chunk = numbersStr.substring(i, i + 12); if (chunk.length < 12) break; const nums = []; for (let j = 0; j < 12; j += 2) nums.push(parseInt(chunk.substring(j, j + 2))); if (nums.some(n => n < 1 || n > 45)) continue; games.push({ label: gameLabels[games.length] || '?', numbers: nums.sort((a, b) => a - b) }); if (games.length >= 5) break; } return games; } catch (e) { return null; } }
+        function toggleNotification(checkbox) { isNotificationEnabled = checkbox.checked; localStorage.setItem('lotto_noti_enabled', isNotificationEnabled); if (isNotificationEnabled) { requestNotificationPermission(); startNotificationScheduler(); showToast("토요일 밤 9시에 알림을 보내드릴게요! 🔔"); } else { showToast("알림이 해제되었습니다."); } }
+        function requestNotificationPermission() { if (!("Notification" in window)) { showToast("이 브라우저는 알림을 지원하지 않습니다.", true); return; } if (Notification.permission !== "granted") { Notification.requestPermission().then(permission => { if (permission !== "granted") { notificationToggle.checked = false; isNotificationEnabled = false; localStorage.setItem('lotto_noti_enabled', false); showToast("알림 권한이 거부되었습니다.", true); } }); } }
+        function startNotificationScheduler() { checkWeeklyNotification(); setInterval(checkWeeklyNotification, 60000); }
+        function checkWeeklyNotification() { if (!isNotificationEnabled) return; const now = new Date(); const day = now.getDay(); const hour = now.getHours(); const minute = now.getMinutes(); if (day === 6 && hour === 21 && minute === 0) { const lastSent = localStorage.getItem('last_noti_date'); const todayStr = now.toDateString(); if (lastSent !== todayStr) { sendNotification(); localStorage.setItem('last_noti_date', todayStr); } } }
+        function sendNotification() { if (Notification.permission === "granted") { const options = { body: "행운의 주인공이 되셨나요? 지금 바로 결과를 확인해보세요!", icon: "https://cdn-icons-png.flaticon.com/512/1042/1042319.png", badge: "https://cdn-icons-png.flaticon.com/512/1042/1042319.png", vibrate: [200, 100, 200] }; if (navigator.serviceWorker.controller) { navigator.serviceWorker.ready.then(function(registration) { registration.showNotification("🍀 로또 추첨 결과 확인", options); }); } else { new Notification("🍀 로또 추첨 결과 확인", options); } } }
 
-        function handleImageUpload(e) {
-            const file = e.target.files[0]; if (!file) return;
-            scanLoader.style.display = 'flex'; scanMessage.textContent = "이미지 처리 중..."; scanSubMessage.textContent = "AI가 로또 용지를 분석하고 있습니다";
-            const reader = new FileReader(); reader.onload = function(event) { const img = new Image(); img.onload = function() { processImage(img); }; img.src = event.target.result; }; reader.readAsDataURL(file); e.target.value = '';
-        }
-
-        function processImage(img) {
-            const canvas = document.getElementById('scan-canvas'); const context = canvas.getContext('2d');
-            const scaleFactor = 1.5; // Reduced scale for faster Gemini upload
-            canvas.width = img.width * scaleFactor; canvas.height = img.height * scaleFactor;
-            context.scale(scaleFactor, scaleFactor); context.drawImage(img, 0, 0);
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            
-            // Try QR Code first
-            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-            if (code) { const parsedGames = parseLottoQR(code.data); if (parsedGames && parsedGames.length > 0) { finishScan(parsedGames, "QR 스캔"); return; } }
-            
-            // If QR fails, use Gemini
-            scanMessage.textContent = "AI 분석 중..."; scanSubMessage.textContent = "Gemini가 번호를 읽고 있습니다..."; 
-            runGeminiAnalysis(canvas.toDataURL("image/jpeg", 0.8));
-        }
-
-        async function runGeminiAnalysis(base64Image) {
-            try {
-                const prompt = "Analyze this image and extract ONLY the lottery numbers. Ignore all other text such as dates, serial numbers, store info, or prices. Return ONLY the valid numbers (1-45 for standard lotto), clearly grouped by row. IMPORTANT: Ensure each game row (A, B, C, etc.) is on a completely separate line. Format example:\nA: 1, 2, 3, 4, 5, 6\nB: 7, 8, 9, 10, 11, 12\nDo not include any other commentary.";
-                
-                const text = await callGeminiAPI(prompt, base64Image);
-                const extractedGames = parseGeminiResponse(text);
-                
-                if (extractedGames.length > 0) { 
-                    finishScan(extractedGames, "AI 스캔"); 
-                } else { 
-                    scanLoader.style.display = 'none'; 
-                    showToast("숫자를 찾지 못했습니다. 수동 입력을 이용해보세요!", true); 
-                }
-            } catch (err) { 
-                console.error(err); 
-                scanLoader.style.display = 'none'; 
-                showToast("분석 중 오류가 발생했습니다. (키 설정 확인 필요)", true); 
-                // Auto open settings if unauthorized
-                if (err.message.includes('400') || err.message.includes('401') || err.message.includes('403')) {
-                     setTimeout(() => openSettings(), 1500);
-                }
-            }
-        }
-
-        async function callGeminiAPI(prompt, base64Image) {
-            // Determine key to use: User Preference > System Fallback
-            const keyToUse = userApiKey || apiKey;
-            
-            if (!keyToUse) {
-                showToast("API 키가 설정되지 않았습니다. 설정에서 키를 등록해주세요.", true);
-                throw new Error("Missing API Key");
-            }
-
-            const cleanBase64 = base64Image.split(',')[1];
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`;
-            
-            const payload = {
-                contents: [{
-                    parts: [
-                        { text: prompt },
-                        { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } }
-                    ]
-                }]
-            };
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                console.error("Gemini API Error Details:", errData);
-                throw new Error(`Gemini API Error: ${response.status}`);
-            }
-            const data = await response.json();
-            return data.candidates[0].content.parts[0].text;
-        }
-
-        function parseGeminiResponse(text) {
-            const games = [];
-            const lines = text.split('\n');
-            
-            lines.forEach(line => {
-                const numsMatch = line.match(/\d+/g);
-                if (!numsMatch) return;
-
-                const validNums = numsMatch.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45);
-                const uniqueNums = [...new Set(validNums)];
-
-                if (uniqueNums.length >= 6) {
-                    const gameNums = uniqueNums.slice(0, 6).sort((a, b) => a - b);
-                    let label = '자동';
-                    const labelMatch = line.match(/([A-E])[:.)]/i); 
-                    if (labelMatch) {
-                        label = labelMatch[1].toUpperCase();
-                    } else if (games.length < 5) {
-                        const labels = ['A', 'B', 'C', 'D', 'E'];
-                        label = labels[games.length];
-                    }
-                    
-                    games.push({ label: label, numbers: gameNums });
-                }
-            });
-            return games;
-        }
-
-        function finishScan(games, method) {
-            scanLoader.style.display = 'none'; closeGlobalResult();
-            if (games.length > 0) { currentNumbers = games[0].numbers; displayNumbers(currentNumbers); }
-            
-            for (let i = games.length - 1; i >= 0; i--) { 
-                const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); 
-                addGameToData(games[i].numbers, `${method} ${label}`); 
-            }
-            showToast(`${games.length}개의 게임을 추출했습니다!`);
-        }
-
-        function parseLottoQR(url) {
-            try {
-                if (!url.includes('dhlottery.co.kr') || !url.includes('v=')) return null;
-                let params = url.split('v=')[1]; if (!params) return null; if (params.includes('&')) params = params.split('&')[0];
-                const cleanStr = params.replace(/[^0-9]/g, ''); if (cleanStr.length < 16) return null; 
-                const numbersStr = cleanStr.substring(4); const games = []; const gameLabels = ['A', 'B', 'C', 'D', 'E'];
-                for (let i = 0; i < numbersStr.length; i += 12) {
-                    const chunk = numbersStr.substring(i, i + 12); if (chunk.length < 12) break;
-                    const nums = []; for (let j = 0; j < 12; j += 2) nums.push(parseInt(chunk.substring(j, j + 2)));
-                    if (nums.some(n => n < 1 || n > 45)) continue;
-                    games.push({ label: gameLabels[games.length] || '?', numbers: nums.sort((a, b) => a - b) });
-                    if (games.length >= 5) break; 
-                }
-                return games;
-            } catch (e) { return null; }
-        }
-
-        async function fetchLatestResult() {
-            const round = document.getElementById('round-input').value;
-            
-            if (winResults[round]) {
-                localStorage.setItem('lotto_current_round', round); 
-                showModal();
-                const cachedData = winResults[round];
-                renderModalContent(cachedData);
-                const winArr = [cachedData.drwtNo1, cachedData.drwtNo2, cachedData.drwtNo3, cachedData.drwtNo4, cachedData.drwtNo5, cachedData.drwtNo6];
-                currentWinData = cachedData; 
-                checkWinningsInHistory(winArr, cachedData.bnusNo, true); 
-                return;
-            }
-
-            showModal();
-            modalContent.innerHTML = `<div class="animate-pulse flex space-x-2 justify-center items-center h-16"><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div></div><p class="text-gray-500 text-sm mt-2">${round}회차 결과 확인 중...</p>`;
-
-            const startDate = new Date('2002-12-07T00:00:00');
-            const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
-            drawDate.setHours(21, 0, 0, 0); 
-            const now = new Date();
-
-            if (drawDate > now) {
-                modalContent.innerHTML = `<div class="text-center py-4"><i class="fas fa-clock text-4xl text-gray-300 mb-2"></i><h4 class="text-lg font-bold text-gray-700">추첨 대기 중</h4><p class="text-gray-500 text-sm mt-1">${round}회차 추첨일은<br>${drawDate.toLocaleDateString()} 입니다.</p></div>`;
-                return;
-            }
-
-            try {
-                const timestamp = new Date().getTime();
-                const targetUrl = `https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=${round}&_=${timestamp}`;
-                
-                const response = await fetch(targetUrl);
-                if (!response.ok) throw new Error('Network response was not ok');
-                const jsonResponse = await response.json();
-
-                if (jsonResponse.data && jsonResponse.data.list && jsonResponse.data.list.length > 0) {
-                    const lottoData = jsonResponse.data.list[0];
-                    const dateStr = String(lottoData.ltRflYmd);
-                    const formattedDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
-                    const mappedData = {
-                        drwNo: lottoData.ltEpsd, drwNoDate: formattedDate,
-                        drwtNo1: lottoData.tm1WnNo, drwtNo2: lottoData.tm2WnNo, drwtNo3: lottoData.tm3WnNo,
-                        drwtNo4: lottoData.tm4WnNo, drwtNo5: lottoData.tm5WnNo, drwtNo6: lottoData.tm6WnNo,
-                        bnusNo: lottoData.bnsWnNo
-                    };
-                    winResults[round] = mappedData;
-                    localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
-                    localStorage.setItem('lotto_current_round', round); 
-                    currentWinData = mappedData; 
-                    renderModalContent(mappedData);
-                    const winArr = [mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6];
-                    checkWinningsInHistory(winArr, mappedData.bnusNo, true);
-                } else { throw new Error('데이터 형식이 올바르지 않습니다.'); }
-            } catch (e) {
-                console.warn("Lotto API Direct Fetch Failed:", e);
-                showToast("데이터를 가져올 수 없어 가상 결과로 대체합니다. (CORS 등)", true);
-                
-                const winNumbers = new Set(); while(winNumbers.size < 6) winNumbers.add(Math.floor(Math.random() * 45) + 1);
-                const winArr = Array.from(winNumbers).sort((a,b)=>a-b);
-                const bonus = Math.floor(Math.random() * 45) + 1;
-                const year = drawDate.getFullYear(); const month = String(drawDate.getMonth() + 1).padStart(2, '0'); const day = String(drawDate.getDate()).padStart(2, '0');
-                const simulatedDate = `${year}-${month}-${day} (모의)`;
-                const mockData = { drwNo: round, drwtNo1: winArr[0], drwtNo2: winArr[1], drwtNo3: winArr[2], drwtNo4: winArr[3], drwtNo5: winArr[4], drwtNo6: winArr[5], bnusNo: bonus, drwNoDate: simulatedDate };
-                currentWinData = mockData;
-                renderModalContent(mockData);
-                checkWinningsInHistory(winArr, bonus, true);
-            }
-        }
-
-        function checkWinningsInHistory(winArr, bonus, showMessage = true) {
-            const items = document.querySelectorAll('.history-item');
-            items.forEach(item => {
-                if (!item.dataset.numbers) return;
-                const myNumbers = JSON.parse(item.dataset.numbers);
-                applyWinStyleToItem(item, winArr, bonus, myNumbers);
-            });
-            if(currentWinData) calculateAndShowSummary(currentWinData);
-            if(showMessage) showToast("결과 확인 완료!");
-        }
-
-        function calculateAndShowSummary(winData) {
-            const winArr = [winData.drwtNo1, winData.drwtNo2, winData.drwtNo3, winData.drwtNo4, winData.drwtNo5, winData.drwtNo6];
-            const bonus = winData.bnusNo;
-            let counts = { 1:0, 2:0, 3:0, 4:0, 5:0, fail:0 };
-            let bestRank = 6;
-            currentFilteredGames.forEach(game => {
-                const nums = game.numbers;
-                let matches = nums.filter(n => winArr.includes(n)).length;
-                let bonusMatch = nums.includes(bonus);
-                let rank = 6;
-                if(matches === 6) rank = 1;
-                else if(matches === 5 && bonusMatch) rank = 2;
-                else if(matches === 5) rank = 3;
-                else if(matches === 4) rank = 4;
-                else if(matches === 3) rank = 5;
-                if(rank < 6) counts[rank]++; else counts.fail++;
-                if(rank < bestRank) bestRank = rank;
-            });
-            const totalWins = counts[1] + counts[2] + counts[3] + counts[4] + counts[5];
-            displayGlobalResult(bestRank, totalWins, counts);
-        }
-
-        function displayGlobalResult(bestRank, totalWins, counts) {
-            let title = "", desc = "", colorClass = "";
-            if (bestRank === 1) { title = "🍀 대박! 1등 당첨! 🍀"; desc = "오늘이 바로 그날입니다! 인생 역전 축하드립니다!"; colorClass = "text-yellow-600"; }
-            else if (bestRank === 2) { title = "🍀 2등 당첨! 축하합니다! 🍀"; desc = "정말 아깝지만 대단한 결과입니다! 축하드려요!"; colorClass = "text-gray-600"; }
-            else if (bestRank === 3) { title = "🍀 3등 당첨! 🍀"; desc = "운이 좋으시네요! 맛있는 거 사드세요."; colorClass = "text-orange-600"; }
-            else if (bestRank === 4) { title = "🍀 4등 당첨 🍀"; desc = "소소한 행복! 5만원 축하드려요."; colorClass = "text-blue-600"; }
-            else if (bestRank === 5) { title = "🍀 5등 당첨 🍀"; desc = "본전은 찾으셨네요! 다음을 노려보세요."; colorClass = "text-green-600"; }
-            else { title = "꽝.. 다음 기회에.. 😭"; desc = "아쉽지만 이번엔 운이 없었네요. 힘내세요!"; colorClass = "text-gray-500"; }
-            
-            if (totalWins > 0) {
-                 let summary = `총 <b class="text-indigo-600">${totalWins}</b>건 당첨! (`;
-                 let details = [];
-                 if(counts[1] > 0) details.push(`1등:${counts[1]}건`);
-                 if(counts[2] > 0) details.push(`2등:${counts[2]}건`);
-                 if(counts[3] > 0) details.push(`3등:${counts[3]}건`);
-                 if(counts[4] > 0) details.push(`4등:${counts[4]}건`);
-                 if(counts[5] > 0) details.push(`5등:${counts[5]}건`);
-                 summary += details.join(', ') + ")";
-                 desc += `<br><span class="mt-1 block text-gray-600 text-xs">${summary}</span>`;
-            }
-            showGlobalResult(title, desc, colorClass);
-        }
-
-        function renderModalContent(data) {
-            const numbers = [data.drwtNo1, data.drwtNo2, data.drwtNo3, data.drwtNo4, data.drwtNo5, data.drwtNo6];
-            let ballsHtml = '<div class="flex justify-center gap-1 mb-4">';
-            numbers.forEach(num => {
-                ballsHtml += `<div class="lotto-ball small-ball ${getBallColorClass(num)}">${num}</div>`;
-            });
-            ballsHtml += '</div>';
-
-            modalContent.innerHTML = `
-                <div class="text-center">
-                    <p class="text-gray-500 text-sm mb-2">${data.drwNoDate} 추첨</p>
-                    <h4 class="text-2xl font-bold text-indigo-600 mb-4">제 ${data.drwNo}회</h4>
-                    ${ballsHtml}
-                    <div class="flex justify-center items-center gap-2 mt-2">
-                        <span class="text-gray-600 font-bold">보너스</span>
-                        <div class="lotto-ball small-ball ${getBallColorClass(data.bnusNo)}">${data.bnusNo}</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function showModal() {
-            resultModal.classList.remove('hidden');
-            setTimeout(() => {
-                resultModal.classList.add('opacity-100');
-                resultModal.querySelector('div').classList.remove('scale-95');
-                resultModal.querySelector('div').classList.add('scale-100');
-            }, 10);
-        }
-
-        function closeModal() {
-            resultModal.classList.remove('opacity-100');
-            resultModal.querySelector('div').classList.remove('scale-100');
-            resultModal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => {
-                resultModal.classList.add('hidden');
-            }, 300);
-        }
-
-        resultModal.addEventListener('click', (e) => {
-            if (e.target === resultModal) closeModal();
-        });
-
-        // Initialize App
+        resultModal.addEventListener('click', (e) => { if (e.target === resultModal) closeModal(); });
         init();
-
     </script>
 </body>
 </html>
