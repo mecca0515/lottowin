@@ -869,6 +869,119 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
         function checkWeeklyNotification() { if (!isNotificationEnabled) return; const now = new Date(); const day = now.getDay(); const hour = now.getHours(); const minute = now.getMinutes(); if (day === 6 && hour === 21 && minute === 0) { const lastSent = localStorage.getItem('last_noti_date'); const todayStr = now.toDateString(); if (lastSent !== todayStr) { sendNotification(); localStorage.setItem('last_noti_date', todayStr); } } }
         function sendNotification() { if (Notification.permission === "granted") { const options = { body: "행운의 주인공이 되셨나요? 지금 바로 결과를 확인해보세요!", icon: "https://cdn-icons-png.flaticon.com/512/1042/1042319.png", badge: "https://cdn-icons-png.flaticon.com/512/1042/1042319.png", vibrate: [200, 100, 200] }; if (navigator.serviceWorker.controller) { navigator.serviceWorker.ready.then(function(registration) { registration.showNotification("🍀 로또 추첨 결과 확인", options); }); } else { new Notification("🍀 로또 추첨 결과 확인", options); } } }
 
+        async function fetchLatestResult() {
+            const round = document.getElementById('round-input').value;
+            if (winResults[round]) {
+                localStorage.setItem('lotto_current_round', round); showModal();
+                const cachedData = winResults[round]; renderModalContent(cachedData);
+                const winArr = [cachedData.drwtNo1, cachedData.drwtNo2, cachedData.drwtNo3, cachedData.drwtNo4, cachedData.drwtNo5, cachedData.drwtNo6];
+                currentWinData = cachedData; checkWinningsInHistory(winArr, cachedData.bnusNo, true); return;
+            }
+            showModal();
+            modalContent.innerHTML = `<div class="animate-pulse flex space-x-2 justify-center items-center h-16"><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div></div><p class="text-gray-500 text-sm mt-2">${round}회차 결과 확인 중...</p>`;
+
+            const startDate = new Date('2002-12-07T00:00:00');
+            const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
+            drawDate.setHours(21, 0, 0, 0); const now = new Date();
+
+            if (drawDate > now) {
+                modalContent.innerHTML = `<div class="text-center py-4"><i class="fas fa-clock text-4xl text-gray-300 mb-2"></i><h4 class="text-lg font-bold text-gray-700">추첨 대기 중</h4><p class="text-gray-500 text-sm mt-1">${round}회차 추첨일은<br>${drawDate.toLocaleDateString()} 입니다.</p></div>`;
+                return;
+            }
+
+            try {
+                const timestamp = new Date().getTime();
+                const targetUrl = `https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=${round}&_=${timestamp}`;
+                
+                const response = await fetch(targetUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const jsonResponse = await response.json();
+
+                if (jsonResponse.returnValue === 'success') {
+                    const lottoData = jsonResponse;
+                    const mappedData = {
+                        drwNo: lottoData.drwNo, drwNoDate: lottoData.drwNoDate,
+                        drwtNo1: lottoData.drwtNo1, drwtNo2: lottoData.drwtNo2, drwtNo3: lottoData.drwtNo3,
+                        drwtNo4: lottoData.drwtNo4, drwtNo5: lottoData.drwtNo5, drwtNo6: lottoData.drwtNo6,
+                        bnusNo: lottoData.bnusNo
+                    };
+                    winResults[round] = mappedData;
+                    localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
+                    localStorage.setItem('lotto_current_round', round); 
+                    currentWinData = mappedData; 
+                    renderModalContent(mappedData);
+                    const winArr = [mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6];
+                    checkWinningsInHistory(winArr, mappedData.bnusNo, true);
+                } else { throw new Error('데이터 형식이 올바르지 않습니다.'); }
+            } catch (e) {
+                console.warn("Lotto API Direct Fetch Failed:", e);
+                showToast("데이터를 가져올 수 없어 가상 결과로 대체합니다. (CORS 등)", true);
+                
+                const winNumbers = new Set(); while(winNumbers.size < 6) winNumbers.add(Math.floor(Math.random() * 45) + 1);
+                const winArr = Array.from(winNumbers).sort((a,b)=>a-b);
+                const bonus = Math.floor(Math.random() * 45) + 1;
+                const year = drawDate.getFullYear(); const month = String(drawDate.getMonth() + 1).padStart(2, '0'); const day = String(drawDate.getDate()).padStart(2, '0');
+                const simulatedDate = `${year}-${month}-${day} (모의)`;
+                const mockData = { drwNo: round, drwtNo1: winArr[0], drwtNo2: winArr[1], drwtNo3: winArr[2], drwtNo4: winArr[3], drwtNo5: winArr[4], drwtNo6: winArr[5], bnusNo: bonus, drwNoDate: simulatedDate };
+                currentWinData = mockData;
+                winResults[round] = mockData; 
+                localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
+                renderModalContent(mockData);
+                checkWinningsInHistory(winArr, bonus, true);
+            }
+        }
+
+        function checkWinningsInHistory(winArr, bonus, showMessage = true) {
+            const items = document.querySelectorAll('.history-item');
+            items.forEach(item => {
+                if (!item.dataset.numbers) return;
+                const myNumbers = JSON.parse(item.dataset.numbers);
+                applyWinStyleToItem(item, winArr, bonus, myNumbers);
+            });
+            if(currentWinData) calculateAndShowSummary(currentWinData);
+            if(showMessage) showToast("결과 확인 완료!");
+        }
+
+        // Restored Modal Functions
+        function renderModalContent(data) {
+            const numbers = [data.drwtNo1, data.drwtNo2, data.drwtNo3, data.drwtNo4, data.drwtNo5, data.drwtNo6];
+            let ballsHtml = '<div class="flex justify-center gap-1 mb-4">';
+            numbers.forEach(num => {
+                ballsHtml += `<div class="lotto-ball small-ball ${getBallColorClass(num)}">${num}</div>`;
+            });
+            ballsHtml += '</div>';
+
+            modalContent.innerHTML = `
+                <div class="text-center">
+                    <p class="text-gray-500 text-sm mb-2">${data.drwNoDate} 추첨</p>
+                    <h4 class="text-2xl font-bold text-indigo-600 mb-4">제 ${data.drwNo}회</h4>
+                    ${ballsHtml}
+                    <div class="flex justify-center items-center gap-2 mt-2">
+                        <span class="text-gray-600 font-bold">보너스</span>
+                        <div class="lotto-ball small-ball ${getBallColorClass(data.bnusNo)}">${data.bnusNo}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showModal() {
+            resultModal.classList.remove('hidden');
+            setTimeout(() => {
+                resultModal.classList.add('opacity-100');
+                resultModal.querySelector('div').classList.remove('scale-95');
+                resultModal.querySelector('div').classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            resultModal.classList.remove('opacity-100');
+            resultModal.querySelector('div').classList.remove('scale-100');
+            resultModal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => {
+                resultModal.classList.add('hidden');
+            }, 300);
+        }
+
         resultModal.addEventListener('click', (e) => { if (e.target === resultModal) closeModal(); });
         init();
     </script>
