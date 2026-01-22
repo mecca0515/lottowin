@@ -817,7 +817,7 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
             toastTimeoutId = setTimeout(() => {
                 toast.style.opacity = '0';
                 toastTimeoutId = null; // 타이머 종료 후 ID 초기화
-            }, 2500);
+            }, 5000);
         }
         function openManualInput() { manualSelection = new Set(); updateManualUI(); const grid = manualInputModal.querySelector('.grid'); grid.innerHTML = ''; for(let i=1; i<=45; i++) { const btn = document.createElement('div'); btn.className = 'select-ball'; btn.textContent = i; btn.onclick = () => toggleManualNumber(i, btn); grid.appendChild(btn); } manualInputModal.classList.remove('hidden'); setTimeout(() => { manualInputModal.classList.add('opacity-100'); manualInputModal.querySelector('div').classList.remove('scale-95'); manualInputModal.querySelector('div').classList.add('scale-100'); }, 10); }
         function toggleManualNumber(num, btn) { if (manualSelection.has(num)) { manualSelection.delete(num); btn.classList.remove('selected'); btn.style.background = ''; btn.style.border = ''; } else { if (manualSelection.size >= 6) { showToast("6개까지만 선택할 수 있습니다.", true); return; } manualSelection.add(num); btn.classList.add('selected'); if (num <= 10) btn.style.background = '#fbc400'; else if (num <= 20) btn.style.background = '#69c'; else if (num <= 30) btn.style.background = '#ff7272'; else if (num <= 40) btn.style.background = '#a5a5a5'; else btn.style.background = '#b0d840'; btn.style.borderColor = 'transparent'; } updateManualUI(); }
