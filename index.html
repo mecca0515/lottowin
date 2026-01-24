@@ -245,7 +245,8 @@
                         <span class="absolute bottom-[-4px] left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-red-500"></span>
                     </span>
                 </button>
-                <input type="file" id="image-input" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
+                <!-- [변경] multiple 속성 추가 및 handleImageUpload 로직 전면 수정 -->
+                <input type="file" id="image-input" class="hidden" accept="image/*" multiple onchange="handleImageUpload(event)">
                 <button onclick="openManualInput()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-sm" title="수동 입력"><i class="fas fa-hand-pointer"></i> 수동</button>
                 <button onclick="copyNumbers()" id="copy-btn" class="w-12 h-12 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-full transition duration-200 border border-gray-200 shadow-sm flex items-center justify-center text-lg" title="클립보드에 복사"><i class="far fa-copy"></i></button>
             </div>
@@ -673,13 +674,11 @@
             
             try {
                 const seed = Date.now();
-                const prompt = `Act as a complex lottery number generator algorithm.
-Generate 6 unique numbers between 1 and 45 based on a complex, non-repetitive statistical model.
-Avoid simple patterns like multiples of 7 or sequential numbers unless statistically significant.
-Ensure a balanced distribution of decades (10s, 20s, 30s, 40s).
-Current Random Seed: ${seed}
-Provide a creative, data-driven reason for this combination in Korean (e.g., "표준 편차 분석 결과...", "회귀 분석 모델에 따른...").
-Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
+                const prompt = `Generate 6 unique lotto numbers (1-45).
+Analyze recent trends using a statistical approach (e.g., standard deviation, hot/cold numbers, even/odd ratio).
+Provide a creative, luck-based reason for this combination in Korean.
+IMPORTANT: Return ONLY a raw JSON object. No Markdown, no code blocks, no intro/outro text.
+Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
                 
                 const responseText = await callGeminiTextAPI(prompt);
                 
@@ -719,7 +718,6 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
         }
 
         async function callGeminiTextAPI(prompt) {
-            // [변경] 지수 백오프 (Exponential Backoff) 적용
              const keyToUse = userApiKey || apiKey;
              if (!keyToUse) throw new Error("Missing API Key");
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`;
@@ -734,22 +732,8 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
                     topP: 0.95
                 }
             };
-            
-            const delays = [1000, 2000, 4000, 8000, 16000];
-            let response;
-            for (let i = 0; i <= delays.length; i++) {
-                try {
-                    response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (response.ok) break;
-                    // 429나 5xx 에러가 아니면 재시도하지 않음
-                    if (response.status !== 429 && response.status < 500) break;
-                } catch(e) {
-                     // 네트워크 에러 시 마지막 시도가 아니면 계속 진행
-                    if (i === delays.length) throw e;
-                }
-                if (i < delays.length) await new Promise(resolve => setTimeout(resolve, delays[i]));
-            }
 
+            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
             const data = await response.json();
             return data.candidates[0].content.parts[0].text;
@@ -1046,12 +1030,189 @@ Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이
         function updateScanButtonState() { const hasKey = userApiKey || apiKey; const scanBtn = document.getElementById('scan-btn'); const keyBadge = document.getElementById('key-badge'); if (hasKey) { scanBtn.classList.remove('bg-gray-400'); scanBtn.classList.add('bg-teal-500', 'hover:bg-teal-600'); keyBadge.classList.add('hidden'); } else { scanBtn.classList.remove('bg-teal-500', 'hover:bg-teal-600'); scanBtn.classList.add('bg-gray-400'); keyBadge.classList.remove('hidden'); } }
         function handleScanClick() { const hasKey = userApiKey || apiKey; if (!hasKey) { showToast("스캔 기능을 사용하려면 설정(⚙️)에서 API Key를 입력해주세요.", true); } else { triggerImageUpload(); } }
         function triggerImageUpload() { document.getElementById('image-input').click(); }
-        function handleImageUpload(e) { const file = e.target.files[0]; if (!file) return; scanLoader.style.display = 'flex'; scanMessage.textContent = "이미지 처리 중..."; scanSubMessage.textContent = "AI가 로또 용지를 분석하고 있습니다"; const reader = new FileReader(); reader.onload = function(event) { const img = new Image(); img.onload = function() { processImage(img); }; img.src = event.target.result; }; reader.readAsDataURL(file); e.target.value = ''; }
-        function processImage(img) { const canvas = document.getElementById('scan-canvas'); const context = canvas.getContext('2d'); const scaleFactor = 1.5; canvas.width = img.width * scaleFactor; canvas.height = img.height * scaleFactor; context.scale(scaleFactor, scaleFactor); context.drawImage(img, 0, 0); const imageData = context.getImageData(0, 0, canvas.width, canvas.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { const parsedGames = parseLottoQR(code.data); if (parsedGames && parsedGames.length > 0) { finishScan(parsedGames, "QR 스캔"); return; } } scanMessage.textContent = "AI 분석 중..."; scanSubMessage.textContent = "Gemini가 번호를 읽고 있습니다..."; runGeminiAnalysis(canvas.toDataURL("image/jpeg", 0.8)); }
-        async function runGeminiAnalysis(base64Image) { try { const prompt = "Extract only the lottery numbers and label the rows as A, B, C, and so on."; const text = await callGeminiAPI(prompt, base64Image); const extractedGames = parseGeminiResponse(text); if (extractedGames.length > 0) { finishScan(extractedGames, "AI 스캔"); } else { scanLoader.style.display = 'none'; showToast("숫자를 찾지 못했습니다. 수동 입력을 이용해보세요!", true); } } catch (err) { console.error(err); scanLoader.style.display = 'none'; showToast("분석 중 오류가 발생했습니다. (키 설정 확인 필요)", true); if (err.message.includes('400') || err.message.includes('401') || err.message.includes('403')) { setTimeout(() => openSettings(), 1500); } } }
+        function handleImageUpload(e) {
+            // [변경] 다중 파일 처리 로직 (multiple files)
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            scanLoader.style.display = 'flex';
+            
+            // Loop through all selected files asynchronously
+            (async () => {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    // Update loading message
+                    scanMessage.textContent = `${files.length}장 중 ${i + 1}번째 이미지 처리 중...`;
+                    scanSubMessage.textContent = "AI가 로또 용지를 분석하고 있습니다";
+                    
+                    try {
+                        await processSingleFile(file);
+                    } catch (err) {
+                        console.error(`File ${i+1} processing error:`, err);
+                        showToast(`${i+1}번째 이미지 처리에 실패했습니다.`, true);
+                    }
+                }
+                
+                // All done
+                scanLoader.style.display = 'none';
+                e.target.value = ''; // Reset input
+                showToast("모든 이미지 처리가 완료되었습니다!");
+            })();
+        }
+
+        // [추가] 단일 파일 처리 헬퍼 (Promise 반환)
+        function processSingleFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = async () => {
+                        await processImage(img);
+                        resolve();
+                    };
+                    img.onerror = reject;
+                    img.src = event.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // [변경] processImage를 async로 변경하고 반환값 처리
+        async function processImage(img) {
+            const canvas = document.getElementById('scan-canvas');
+            const context = canvas.getContext('2d');
+            
+            // ... (canvas resizing logic same as before)
+            const scaleFactor = 1.5; 
+            canvas.width = img.width * scaleFactor; 
+            canvas.height = img.height * scaleFactor;
+            context.scale(scaleFactor, scaleFactor); 
+            context.drawImage(img, 0, 0); 
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // 1. Try QR Code
+            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+            if (code) {
+                const parsedGames = parseLottoQR(code.data);
+                if (parsedGames && parsedGames.length > 0) {
+                    finishScan(parsedGames, "QR 스캔");
+                    return; // Stop here if QR worked
+                }
+            }
+            
+            // 2. Try Gemini AI
+            // Note: We don't change text content here because handleImageUpload controls it
+            await runGeminiAnalysis(canvas.toDataURL("image/jpeg", 0.8));
+        }
+
+        async function runGeminiAnalysis(base64Image) {
+            try {
+                // [변경] 프롬프트 강화: JSON 포맷 강제 및 라벨링 명확화
+                const prompt = `Look at the lottery ticket in the image. Identify the rows of numbers (usually 6 numbers per row between 1 and 45). Ignore prices, dates, or serial numbers. 
+                Return the result as a JSON ARRAY of objects. Each object must have: 
+                - "label": String (e.g., "A", "B", "C", "D", "E"). If not visible, assign "A", "B", "C"... in order. 
+                - "numbers": Array of integers (the 6 lotto numbers). 
+                Example format: [{"label": "A", "numbers": [1, 2, 3, 4, 5, 6]}, {"label": "B", "numbers": [10, 11, 12, 13, 14, 15]}] 
+                Return ONLY the raw JSON string. No markdown, no "json" tags.`;
+                
+                const text = await callGeminiAPI(prompt, base64Image);
+                const extractedGames = parseGeminiResponse(text);
+                
+                if (extractedGames.length > 0) { 
+                    finishScan(extractedGames, "AI 스캔"); 
+                } else { 
+                    // 개별 이미지 실패 시 토스트만 띄우고 넘어감 (로더는 끄지 않음)
+                    console.log("No numbers found in this image");
+                }
+            } catch (err) { 
+                console.error(err); 
+                // 에러 발생 시에도 로더 끄지 않음 (상위 루프에서 제어)
+                if (err.message.includes('400') || err.message.includes('401') || err.message.includes('403')) { 
+                    setTimeout(() => openSettings(), 1500); 
+                }
+            }
+        }
+        
         async function callGeminiAPI(prompt, base64Image) { const keyToUse = userApiKey || apiKey; if (!keyToUse) { showToast("API 키가 설정되지 않았습니다...", true); throw new Error("Missing API Key"); } const cleanBase64 = base64Image.split(',')[1]; const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`; const payload = { contents: [{ parts: [ { text: prompt }, { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } } ] }] }; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) { throw new Error(`Gemini API Error: ${response.status}`); } const data = await response.json(); return data.candidates[0].content.parts[0].text; }
-        function parseGeminiResponse(text) { const games = []; const lines = text.split('\n'); lines.forEach(line => { const numsMatch = line.match(/\d+/g); if (!numsMatch) return; const validNums = numsMatch.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45); const uniqueNums = [...new Set(validNums)]; if (uniqueNums.length >= 6) { const gameNums = uniqueNums.slice(0, 6).sort((a, b) => a - b); let label = '자동'; const labelMatch = line.match(/([A-E])[:.)]/i); if (labelMatch) { label = labelMatch[1].toUpperCase(); } else if (games.length < 5) { const labels = ['A', 'B', 'C', 'D', 'E']; label = labels[games.length]; } games.push({ label: label, numbers: gameNums }); } }); return games; }
-        function finishScan(games, method) { scanLoader.style.display = 'none'; closeGlobalResult(); if (games.length > 0) { currentNumbers = games[0].numbers; displayNumbers(currentNumbers); } for (let i = games.length - 1; i >= 0; i--) { const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); addGameToData(games[i].numbers, `${method} ${label}`); } showToast(`${games.length}개의 게임을 추출했습니다!`); }
+        
+        // [변경] 파싱 로직: JSON 파싱 우선, 실패 시 텍스트 파싱 (행 번호 제거 포함)
+        function parseGeminiResponse(text) { 
+            let games = [];
+            
+            // 1. Try JSON Parsing first (Best case)
+            try {
+                const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const jsonStart = cleanText.indexOf('[');
+                const jsonEnd = cleanText.lastIndexOf(']');
+                if (jsonStart !== -1 && jsonEnd !== -1) {
+                    const jsonStr = cleanText.substring(jsonStart, jsonEnd + 1);
+                    const parsed = JSON.parse(jsonStr);
+                    // Validate structure
+                    parsed.forEach(p => {
+                        if (p.numbers && Array.isArray(p.numbers) && p.numbers.length >= 6) {
+                            // Take first 6 valid numbers
+                            const validNums = p.numbers.filter(n => typeof n === 'number' && n >= 1 && n <= 45).slice(0, 6).sort((a,b)=>a-b);
+                            if (validNums.length === 6) {
+                                games.push({ label: p.label || '자동', numbers: validNums });
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log("JSON parsing failed, falling back to text regex");
+            }
+            
+            if (games.length > 0) return games;
+
+            // 2. Fallback: Text Regex Parsing (Cleaned up)
+            const lines = text.split('\n'); 
+            const labels = ['A', 'B', 'C', 'D', 'E'];
+            
+            lines.forEach(line => { 
+                // Remove potential row indices like "1.", "Row 1:", "| 1 |"
+                const cleanedLine = line.replace(/^(Row|Game)?\s*\d+[:.]?/i, '').replace(/^\|\s*\d+\s*\|/, '');
+                
+                const numsMatch = cleanedLine.match(/\d+/g); 
+                if (!numsMatch) return; 
+                
+                const validNums = numsMatch.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45); 
+                const uniqueNums = [...new Set(validNums)]; 
+                
+                if (uniqueNums.length >= 6) { 
+                    // If more than 6, take the LAST 6 (avoids picking up index numbers at the start)
+                    const gameNums = uniqueNums.slice(-6).sort((a, b) => a - b); 
+                    
+                    // Assign label
+                    let label = labels[games.length % 5]; // Default A, B, C...
+                    const labelMatch = line.match(/([A-E])[:.)]/i); 
+                    if (labelMatch) { label = labelMatch[1].toUpperCase(); } 
+                    
+                    games.push({ label: label, numbers: gameNums }); 
+                } 
+            }); 
+            return games; 
+        }
+
+        // [변경] finishScan: 로더 닫지 않음 (handleImageUpload가 제어)
+        function finishScan(games, method) { 
+            // scanLoader.style.display = 'none'; // <-- REMOVED
+            // closeGlobalResult(); 
+            
+            if (games.length > 0) { currentNumbers = games[0].numbers; displayNumbers(currentNumbers); } 
+            
+            // Add to history (reverse loop to keep order A->E top-down if prepending)
+            // Actually, addGameToData unshifts, so to keep A at bottom and E at top (latest), 
+            // we should iterate normally or reverse depending on preference.
+            // Let's iterate normal so A is added first (bottom of history), E last (top of history)
+            // Or reverse so A is last added (top). Let's keep reverse for now.
+            for (let i = games.length - 1; i >= 0; i--) { 
+                const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); 
+                addGameToData(games[i].numbers, `${method} ${label}`); 
+            } 
+            // showToast(`${games.length}개의 게임을 추출했습니다!`); // Toast handled by parent
+        }
+        
         function parseLottoQR(url) { try { if (!url.includes('dhlottery.co.kr') || !url.includes('v=')) return null; let params = url.split('v=')[1]; if (!params) return null; if (params.includes('&')) params = params.split('&')[0]; const cleanStr = params.replace(/[^0-9]/g, ''); if (cleanStr.length < 16) return null; const numbersStr = cleanStr.substring(4); const games = []; const gameLabels = ['A', 'B', 'C', 'D', 'E']; for (let i = 0; i < numbersStr.length; i += 12) { const chunk = numbersStr.substring(i, i + 12); if (chunk.length < 12) break; const nums = []; for (let j = 0; j < 12; j += 2) nums.push(parseInt(chunk.substring(j, j + 2))); if (nums.some(n => n < 1 || n > 45)) continue; games.push({ label: gameLabels[games.length] || '?', numbers: nums.sort((a, b) => a - b) }); if (games.length >= 5) break; } return games; } catch (e) { return null; } }
         function toggleNotification(checkbox) { isNotificationEnabled = checkbox.checked; localStorage.setItem('lotto_noti_enabled', isNotificationEnabled); if (isNotificationEnabled) { requestNotificationPermission(); startNotificationScheduler(); showToast("토요일 밤 9시에 알림을 보내드릴게요! 🔔"); } else { showToast("알림이 해제되었습니다."); } }
         function requestNotificationPermission() { if (!("Notification" in window)) { showToast("이 브라우저는 알림을 지원하지 않습니다.", true); return; } if (Notification.permission !== "granted") { Notification.requestPermission().then(permission => { if (permission !== "granted") { notificationToggle.checked = false; isNotificationEnabled = false; localStorage.setItem('lotto_noti_enabled', false); showToast("알림 권한이 거부되었습니다.", true); } }); } }
