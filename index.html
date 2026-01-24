@@ -8,7 +8,7 @@
     <!-- PWA Settings & App Icons -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#059669">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="로또윈">
     
@@ -381,7 +381,7 @@
         let currentFilteredGames = [];
         let currentWinData = null; 
         let toastTimeoutId = null;
-        let editingGameId = null; 
+        let editingGameId = null; // [추가] 수정 모드 추적용 변수
 
         // --- Elements ---
         const historyList = document.getElementById('history-list');
@@ -408,11 +408,13 @@
         const userApiKeyInput = document.getElementById('user-api-key');
         const notificationToggle = document.getElementById('notification-toggle');
         const aiLoader = document.getElementById('ai-loader');
+        
+        // Element IDs strictly defined in HTML above
         const scanBtn = document.getElementById('scan-btn');
         const aiGenBtn = document.getElementById('ai-gen-btn');
         const patternGenBtn = document.getElementById('pattern-gen-btn');
-        const manualModalTitle = document.getElementById('manual-modal-title');
-        const manualSaveBtn = document.getElementById('manual-save-btn');
+        const manualModalTitle = document.getElementById('manual-modal-title'); // [추가] 모달 제목 변경용
+        const manualSaveBtn = document.getElementById('manual-save-btn'); // [추가] 모달 저장 버튼 텍스트 변경용
 
         function init() {
             const storedHistory = localStorage.getItem('lotto_history');
@@ -493,10 +495,12 @@
             historyData = historyData.filter(game => game.id !== id); saveHistory(); renderHistory(currentRound);
         }
         
+        // [추가] 게임 데이터 업데이트 함수
         function updateGameData(id, newNumbers) {
             const index = historyData.findIndex(game => game.id === id);
             if (index !== -1) {
                 historyData[index].numbers = newNumbers;
+                // 수정된 경우 태그 업데이트 (선택 사항)
                 if (!historyData[index].tag.includes('(수정)')) {
                     historyData[index].tag = "수동 (수정)";
                 }
@@ -669,11 +673,13 @@
             
             try {
                 const seed = Date.now();
-                const prompt = `Generate 6 unique lotto numbers (1-45).
-Analyze recent trends using a statistical approach (e.g., standard deviation, hot/cold numbers, even/odd ratio).
-Provide a creative, luck-based reason for this combination in Korean.
-IMPORTANT: Return ONLY a raw JSON object. No Markdown, no code blocks, no intro/outro text.
-Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
+                const prompt = `Act as a complex lottery number generator algorithm.
+Generate 6 unique numbers between 1 and 45 based on a complex, non-repetitive statistical model.
+Avoid simple patterns like multiples of 7 or sequential numbers unless statistically significant.
+Ensure a balanced distribution of decades (10s, 20s, 30s, 40s).
+Current Random Seed: ${seed}
+Provide a creative, data-driven reason for this combination in Korean (e.g., "표준 편차 분석 결과...", "회귀 분석 모델에 따른...").
+Output ONLY a valid JSON object: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
                 
                 const responseText = await callGeminiTextAPI(prompt);
                 
@@ -713,6 +719,7 @@ Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
         }
 
         async function callGeminiTextAPI(prompt) {
+            // [변경] 지수 백오프 (Exponential Backoff) 적용
              const keyToUse = userApiKey || apiKey;
              if (!keyToUse) throw new Error("Missing API Key");
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`;
@@ -727,8 +734,22 @@ Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
                     topP: 0.95
                 }
             };
+            
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            let response;
+            for (let i = 0; i <= delays.length; i++) {
+                try {
+                    response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (response.ok) break;
+                    // 429나 5xx 에러가 아니면 재시도하지 않음
+                    if (response.status !== 429 && response.status < 500) break;
+                } catch(e) {
+                     // 네트워크 에러 시 마지막 시도가 아니면 계속 진행
+                    if (i === delays.length) throw e;
+                }
+                if (i < delays.length) await new Promise(resolve => setTimeout(resolve, delays[i]));
+            }
 
-            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
             const data = await response.json();
             return data.candidates[0].content.parts[0].text;
