@@ -412,7 +412,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, onSnapshot, updateDoc, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, onSnapshot, updateDoc, orderBy, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBFaTXAYdoJYKCw3QEaxlWONgMuETnNG0U",
@@ -519,6 +519,21 @@
                  await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'history', id));
              } catch (e) {
                  console.error("Error removing document: ", e);
+             }
+        }
+
+        window.deleteRoundHistoryFromFirestore = async (round) => {
+             if (!auth || !auth.currentUser) return;
+             try {
+                 const q = query(collection(db, 'users', auth.currentUser.uid, 'history'), where('round', '==', round));
+                 const querySnapshot = await getDocs(q);
+                 const batch = writeBatch(db);
+                 querySnapshot.forEach((doc) => {
+                     batch.delete(doc.ref);
+                 });
+                 await batch.commit();
+             } catch (e) {
+                 console.error("Error clearing round history: ", e);
              }
         }
 
@@ -904,6 +919,7 @@
         function deleteGameFromData(id) {
             if (window.currentUser && window.deleteGameFromFirestore) {
                 window.deleteGameFromFirestore(id);
+                
             } else {
                 historyData = historyData.filter(game => game.id !== id); 
                 saveHistory(); 
@@ -928,8 +944,10 @@
         }
 
         function clearCurrentRoundHistory() {
-             if (window.currentUser) {
-                 showToast("로그인 상태에서는 전체 삭제가 지원되지 않습니다.");
+             if (window.currentUser && window.deleteRoundHistoryFromFirestore) {
+                window.deleteRoundHistoryFromFirestore(currentRound);
+                historyData = historyData.filter(game => game.round !== currentRound);
+                renderHistory(currentRound);
              } else {
                 historyData = historyData.filter(game => game.round !== currentRound); 
                 saveHistory(); 
