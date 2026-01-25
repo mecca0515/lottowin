@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로또윈 - 부자 되기 프로젝트</title>
+    <title>LottoWin - 부자 되기 프로젝트</title>
     
     <!-- PWA Settings & App Icons -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#059669">
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="로또윈">
+    <meta name="apple-mobile-web-app-title" content="LottoWin">
     
     <!-- 아이콘 설정 -->
     <link rel="icon" type="image/png" href="app_logo.png">
@@ -37,7 +37,6 @@
             backdrop-filter: blur(5px);
         }
 
-        /* Splash Screen Animation */
         #splash-screen {
             transition: opacity 0.5s ease-out, visibility 0.5s;
         }
@@ -46,7 +45,6 @@
             visibility: hidden;
         }
 
-        /* Styles for balls */
         .lotto-ball {
             width: 3rem;
             height: 3rem;
@@ -133,7 +131,6 @@
         .history-item { transition: all 0.2s; position: relative; }
         .history-item:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         
-        /* Action buttons in history item */
         .item-actions { opacity: 0.3; transition: opacity 0.2s; display: flex; gap: 0.25rem; }
         .history-item:hover .item-actions { opacity: 1; }
         .action-btn { padding: 0.25rem 0.4rem; border-radius: 0.375rem; transition: all 0.2s; }
@@ -142,7 +139,7 @@
         .result-banner { transition: all 0.3s ease-out; max-height: 0; overflow: hidden; opacity: 0; }
         .result-banner.show { max-height: 200px; opacity: 1; margin-bottom: 0.25rem; padding: 0.25rem; }
 
-        #result-modal, #manual-input-modal, #delete-confirm-modal, #settings-modal { background-color: rgba(0, 0, 0, 0.5); }
+        #result-modal, #manual-input-modal, #delete-confirm-modal, #settings-modal, #simulation-modal { background-color: rgba(0, 0, 0, 0.5); }
 
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
@@ -157,7 +154,6 @@
             animation: float-badge 2s ease-in-out infinite;
         }
 
-        /* Toggle Switch CSS */
         .toggle-checkbox:checked { right: 0; border-color: #10b981; }
         .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
         .toggle-checkbox { right: 0; z-index: 1; border-color: #e5e7eb; transition: all 0.3s; }
@@ -237,6 +233,12 @@
                 </button>
             </div>
             
+            <div class="mb-4">
+                 <button onclick="openSimulationModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2 text-base transform active:scale-95">
+                    <i class="fas fa-rocket"></i> 1등 기원 무한 시뮬레이션
+                </button>
+            </div>
+            
             <div class="flex gap-2 mb-2 items-center">
                 <button id="scan-btn" onclick="handleScanClick()" class="relative flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-sm overflow-visible" title="이미지/QR 번호 추출">
                     <i class="fas fa-camera"></i> <span>스캔</span>
@@ -245,7 +247,6 @@
                         <span class="absolute bottom-[-4px] left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[4px] border-t-red-500"></span>
                     </span>
                 </button>
-                <!-- [변경] multiple 속성 추가 및 handleImageUpload 로직 전면 수정 -->
                 <input type="file" id="image-input" class="hidden" accept="image/*" multiple onchange="handleImageUpload(event)">
                 <button onclick="openManualInput()" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-sm" title="수동 입력"><i class="fas fa-hand-pointer"></i> 수동</button>
                 <button onclick="copyNumbers()" id="copy-btn" class="w-12 h-12 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-full transition duration-200 border border-gray-200 shadow-sm flex items-center justify-center text-lg" title="클립보드에 복사"><i class="far fa-copy"></i></button>
@@ -295,6 +296,46 @@
         <i class="fas fa-info-circle flex-shrink-0"></i> <span id="toast-msg" class="leading-snug">메시지</span>
     </div>
 
+    <!-- Simulation Modal -->
+    <div id="simulation-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300 flex flex-col gap-4">
+            <div class="flex justify-between items-center pb-2 border-b border-gray-100">
+                <h3 class="text-lg font-bold text-gray-800">🚀 1등 기원 시뮬레이션</h3>
+                <button onclick="closeSimulationModal()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="text-center py-2">
+                <div class="text-sm text-gray-500 mb-1">현재 타겟 회차</div>
+                <div class="text-xl font-bold text-indigo-600" id="sim-target-round">-</div>
+                <div class="text-xs text-gray-400 mt-1" id="sim-win-nums">당첨 번호 로드 필요</div>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">시도 횟수</span>
+                    <span class="font-bold text-gray-800" id="sim-count">0회</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">가상 비용</span>
+                    <span class="font-bold text-red-500" id="sim-cost">0원</span>
+                </div>
+                 <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">최고 등수</span>
+                    <span class="font-bold text-yellow-600" id="sim-best-rank">-</span>
+                </div>
+            </div>
+            
+            <div id="sim-log" class="text-xs text-center text-gray-400 h-24 overflow-y-auto border border-gray-100 rounded p-2">
+                시뮬레이션 대기 중...
+            </div>
+
+            <button id="sim-action-btn" onclick="toggleSimulation()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl transition shadow-md">
+                시작하기
+            </button>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
     <div id="result-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
             <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-800">당첨 결과 확인</h3><button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button></div>
@@ -302,6 +343,7 @@
         </div>
     </div>
 
+    <!-- Manual Input Modal -->
     <div id="manual-input-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-4 max-w-sm w-full mx-4 flex flex-col max-h-[90vh] transform scale-95 transition-transform duration-300">
             <div class="flex justify-between items-center mb-4 shrink-0">
@@ -314,6 +356,7 @@
         </div>
     </div>
 
+    <!-- Delete Confirm Modal -->
     <div id="delete-confirm-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
             <h3 id="delete-modal-title" class="text-lg font-bold text-gray-800 mb-2">🗑️ 기록 전체 삭제</h3>
@@ -322,6 +365,7 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
             <div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-gray-800">⚙️ 설정</h3><button onclick="closeSettings()" class="text-gray-400 hover:text-gray-600 transition"><i class="fas fa-times"></i></button></div>
@@ -334,6 +378,15 @@
                     * 키는 브라우저에만 저장됩니다.
                     <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-600 underline hover:text-indigo-800 ml-1">키 발급받기</a>
                 </p>
+            </div>
+
+            <!-- Login Button Area -->
+            <div class="mb-4 pb-4 border-b border-gray-100" id="login-area">
+                 <label class="block text-sm font-bold text-gray-700 mb-2">로그인 (데이터 동기화)</label>
+                 <button onclick="handleLogin()" id="auth-btn" class="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 font-bold py-2 rounded-xl transition shadow-sm">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5"> Google로 로그인
+                 </button>
+                 <p class="text-xs text-gray-400 mt-2" id="login-status">로그인하면 데이터를 클라우드에 저장합니다.</p>
             </div>
 
             <div class="mb-4 flex items-center justify-between">
@@ -354,6 +407,137 @@
     </div>
 
     <canvas id="scan-canvas" class="hidden"></canvas>
+
+    <!-- Firebase SDK Imports (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, onSnapshot, updateDoc, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBFaTXAYdoJYKCw3QEaxlWONgMuETnNG0U",
+            authDomain: "lottowin-d2817.firebaseapp.com",
+            projectId: "lottowin-d2817",
+            storageBucket: "lottowin-d2817.firebasestorage.app",
+            messagingSenderId: "757943357904",
+            appId: "1:757943357904:web:3ce18a90878ee6264329d5",
+            measurementId: "G-D43XDF3E4B"
+        };
+
+        let app, auth, db;
+        let unsubscribe = null; // Firestore listener unsubscriber
+
+        try {
+            if (firebaseConfig.apiKey) {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                console.log("Firebase Initialized");
+
+                onAuthStateChanged(auth, (user) => {
+                    const btn = document.getElementById('auth-btn');
+                    const status = document.getElementById('login-status');
+                    
+                    if (user) {
+                        if (btn) {
+                             btn.innerHTML = `<i class="fas fa-sign-out-alt"></i> 로그아웃`;
+                             btn.onclick = handleLogout;
+                        }
+                        if (status) status.textContent = `${user.displayName}님 환영합니다!`;
+                        window.currentUser = user; 
+                        loadFirestoreData(user.uid); // Load data from Firestore
+                    } else {
+                        if (btn) {
+                            btn.innerHTML = `<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5"> Google로 로그인`;
+                            btn.onclick = handleLogin;
+                        }
+                        if (status) status.textContent = "로그인하면 데이터를 클라우드에 저장합니다.";
+                        window.currentUser = null;
+                        
+                        // Stop listening to Firestore and fallback to localStorage
+                        if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+                        // Re-load local history
+                        const storedHistory = localStorage.getItem('lotto_history');
+                        if (storedHistory) { 
+                            // Update global historyData and UI
+                             window.location.reload();
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.log("Firebase Config Missing or Error", e);
+        }
+
+        function loadFirestoreData(uid) {
+            if (!db) return;
+            const q = query(collection(db, 'users', uid, 'history'), orderBy('date', 'desc'));
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                const games = [];
+                snapshot.forEach((doc) => {
+                    games.push({ id: doc.id, ...doc.data() });
+                });
+                // Expose to global scope to update UI
+                if (window.updateHistoryFromFirestore) {
+                    window.updateHistoryFromFirestore(games);
+                }
+            });
+        }
+
+        // Expose Firebase functions to global window object
+        window.handleLogin = async () => {
+            if (!auth) { alert("Firebase 설정이 필요합니다."); return; }
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error(error);
+                alert("로그인 실패: " + error.message);
+            }
+        };
+
+        window.handleLogout = async () => {
+            if (!auth) return;
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        
+        window.addGameToFirestore = async (game) => {
+            if (!auth || !auth.currentUser) return;
+            try {
+                const { id, ...gameData } = game; 
+                await addDoc(collection(db, 'users', auth.currentUser.uid, 'history'), gameData);
+            } catch (e) {
+                console.error("Error adding document: ", e);
+            }
+        }
+        
+        window.deleteGameFromFirestore = async (id) => {
+             if (!auth || !auth.currentUser) return;
+             try {
+                 await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'history', id));
+             } catch (e) {
+                 console.error("Error removing document: ", e);
+             }
+        }
+
+        window.updateGameInFirestore = async (id, newNumbers) => {
+             if (!auth || !auth.currentUser) return;
+             try {
+                 const gameRef = doc(db, 'users', auth.currentUser.uid, 'history', id);
+                 await updateDoc(gameRef, {
+                     numbers: newNumbers,
+                     tag: "수동 (수정)"
+                 });
+             } catch (e) {
+                 console.error("Error updating document: ", e);
+             }
+        }
+
+    </script>
 
     <script>
         // --- Service Worker Registration for PWA ---
@@ -382,7 +566,9 @@
         let currentFilteredGames = [];
         let currentWinData = null; 
         let toastTimeoutId = null;
-        let editingGameId = null; // [추가] 수정 모드 추적용 변수
+        let editingGameId = null; 
+        
+        let simState = { isRunning: false, count: 0, bestRank: 7, targetNumbers: [], targetBonus: 0 };
 
         // --- Elements ---
         const historyList = document.getElementById('history-list');
@@ -409,19 +595,32 @@
         const userApiKeyInput = document.getElementById('user-api-key');
         const notificationToggle = document.getElementById('notification-toggle');
         const aiLoader = document.getElementById('ai-loader');
-        
-        // Element IDs strictly defined in HTML above
         const scanBtn = document.getElementById('scan-btn');
         const aiGenBtn = document.getElementById('ai-gen-btn');
         const patternGenBtn = document.getElementById('pattern-gen-btn');
-        const manualModalTitle = document.getElementById('manual-modal-title'); // [추가] 모달 제목 변경용
-        const manualSaveBtn = document.getElementById('manual-save-btn'); // [추가] 모달 저장 버튼 텍스트 변경용
+        const manualModalTitle = document.getElementById('manual-modal-title');
+        const manualSaveBtn = document.getElementById('manual-save-btn');
+        
+        // Simulation elements
+        const simulationModal = document.getElementById('simulation-modal');
+        const simTargetRound = document.getElementById('sim-target-round');
+        const simWinNums = document.getElementById('sim-win-nums');
+        const simCountEl = document.getElementById('sim-count');
+        const simCostEl = document.getElementById('sim-cost');
+        const simBestRankEl = document.getElementById('sim-best-rank');
+        const simLogEl = document.getElementById('sim-log');
+        const simActionBtn = document.getElementById('sim-action-btn');
 
+        // --- Init Function (Placed at top level) ---
         function init() {
             const storedHistory = localStorage.getItem('lotto_history');
-            if (storedHistory) { historyData = JSON.parse(storedHistory); }
+            if (storedHistory) { 
+                try { historyData = JSON.parse(storedHistory); } catch(e) { historyData = []; }
+            }
             const storedWinResults = localStorage.getItem('lotto_win_results');
-            if (storedWinResults) { winResults = JSON.parse(storedWinResults); }
+            if (storedWinResults) { 
+                try { winResults = JSON.parse(storedWinResults); } catch(e) { winResults = {}; }
+            }
 
             const latestRound = calculateCurrentRound();
             populateRoundSelect(latestRound); 
@@ -436,6 +635,7 @@
             roundInput.value = currentRound;
             updateRoundInfo(currentRound);
             renderHistory(currentRound);
+            
             historyList.addEventListener('scroll', () => {
                 if (historyList.scrollTop + historyList.clientHeight >= historyList.scrollHeight - 50) {
                     loadMoreHistory();
@@ -456,481 +656,38 @@
             }, 1500);
         }
 
-        // ... [Basic Calculation & UI Functions] ...
-        function calculateCurrentRound() {
-            const startDate = new Date('2002-12-07T00:00:00'); 
-            const today = new Date();
-            const diffTime = Math.abs(today - startDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-            return Math.floor((diffDays - 1) / 7) + 2;
-        }
-
-        function populateRoundSelect(maxRound) {
-            roundInput.innerHTML = '';
-            for (let i = maxRound; i >= 1; i--) {
-                const option = document.createElement('option');
-                option.value = i; option.textContent = i; option.className = "text-gray-800";
-                roundInput.appendChild(option);
-            }
-        }
-
-        function updateRoundInfo(round) {
-            historyRoundLabel.textContent = `${round}회`;
-            const startDate = new Date('2002-12-07T00:00:00');
-            const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
-            const year = drawDate.getFullYear(); const month = String(drawDate.getMonth() + 1).padStart(2, '0'); const day = String(drawDate.getDate()).padStart(2, '0');
-            drawDateSpan.textContent = `(${year}-${month}-${day})`;
-        }
-
-        roundInput.addEventListener('change', (e) => {
-            let val = parseInt(e.target.value); currentRound = val; updateRoundInfo(val);
-            localStorage.setItem('lotto_current_round', currentRound); renderHistory(currentRound); closeGlobalResult();
-        });
-
-        function addGameToData(numbers, tag) {
-            const game = { id: Date.now() + Math.random(), round: currentRound, numbers: numbers, tag: tag, date: new Date().toISOString() };
-            historyData.unshift(game); saveHistory(); renderHistory(currentRound);
-        }
-
-        function deleteGameFromData(id) {
-            historyData = historyData.filter(game => game.id !== id); saveHistory(); renderHistory(currentRound);
-        }
-        
-        // [추가] 게임 데이터 업데이트 함수
-        function updateGameData(id, newNumbers) {
-            const index = historyData.findIndex(game => game.id === id);
-            if (index !== -1) {
-                historyData[index].numbers = newNumbers;
-                // 수정된 경우 태그 업데이트 (선택 사항)
-                if (!historyData[index].tag.includes('(수정)')) {
-                    historyData[index].tag = "수동 (수정)";
-                }
-                saveHistory();
-                renderHistory(currentRound);
-            }
-        }
-
-        function clearCurrentRoundHistory() {
-            historyData = historyData.filter(game => game.round !== currentRound); saveHistory(); renderHistory(currentRound);
-        }
-
-        function saveHistory() {
-            localStorage.setItem('lotto_history', JSON.stringify(historyData));
-        }
-
-        // --- Core: Pattern Generation Logic ---
-        function generatePatternLotto() {
-            closeGlobalResult();
-            
-            if(patternGenBtn) {
-                patternGenBtn.disabled = true;
-                patternGenBtn.classList.add('opacity-70', 'cursor-wait');
-            }
-
-            setTimeout(() => {
-                const patternData = applyRandomPattern();
-                currentNumbers = patternData.numbers;
-                displayNumbers(currentNumbers);
-                addGameToData(currentNumbers, patternData.name);
-                showToast(`패턴 적용: ${patternData.name}`);
-                
-                if(patternGenBtn) {
-                    patternGenBtn.disabled = false;
-                    patternGenBtn.classList.remove('opacity-70', 'cursor-wait');
-                }
-            }, 300);
-        }
-
-        function applyRandomPattern() {
-            const patterns = [
-                { name: "⚡ 20번대 집중", weight: 1, func: () => generateDecadeFocus(21, 30, 3) },
-                { name: "⚡ 10&30번대 믹스", weight: 1, func: () => generateMixedDecades(11, 20, 2, 31, 40, 2) },
-                { name: "⚡ 40번대 연번", weight: 1, func: () => generateConsecutiveInRange(41, 45) },
-                { name: "⚡ 연번 포함", weight: 1, func: () => generateConsecutiveAny() },
-                { name: "⚡ 끝수 일치", weight: 1, func: () => generateEndingMatch() },
-                { name: "🎲 랜덤 생성", weight: 2, func: () => generateRandomFixed(6) },
-                { name: "⚡ 10번대 집중", weight: 1, func: () => generateDecadeFocus(11, 20, 3) },
-                { name: "⚡ 30번대 집중", weight: 1, func: () => generateDecadeFocus(31, 40, 3) },
-                { name: "⚡ 20~30번대 집중", weight: 1, func: () => generateDecadeFocus(21, 40, 4) },
-                { name: "⚖️ 저고(Low/High) 균형", weight: 1, func: () => generateLowHighMix() },
-                { name: "🌈 골고루 분포", weight: 1, func: () => generateBalanced() }
-            ];
-            
-            const strategy = patterns[Math.floor(Math.random() * patterns.length)];
-            let nums = strategy.func();
-            
-            if (!nums || nums.length !== 6 || new Set(nums).size !== 6) {
-                return { numbers: generateRandomFixed(6), name: "🎲 랜덤 생성 (Fallback)" };
-            }
-            return { numbers: nums.sort((a,b)=>a-b), name: strategy.name };
-        }
-
-        function generateRandomFixed(count, exclude = []) {
-            const nums = new Set();
-            while(nums.size < count) {
-                let n = Math.floor(Math.random() * 45) + 1;
-                if (!exclude.includes(n)) nums.add(n);
-            }
-            return Array.from(nums);
-        }
-
-        function generateDecadeFocus(start, end, count) {
-            const focusNums = new Set();
-            while(focusNums.size < count) {
-                let n = Math.floor(Math.random() * (end - start + 1)) + start;
-                focusNums.add(n);
-            }
-            const remainder = generateRandomFixed(6 - count, Array.from(focusNums));
-            return [...focusNums, ...remainder];
-        }
-
-        function generateMixedDecades(s1, e1, c1, s2, e2, c2) {
-            const set1 = new Set();
-            while(set1.size < c1) set1.add(Math.floor(Math.random() * (e1 - s1 + 1)) + s1);
-            const set2 = new Set();
-            while(set2.size < c2) set2.add(Math.floor(Math.random() * (e2 - s2 + 1)) + s2);
-            
-            const used = [...set1, ...set2];
-            const remainder = generateRandomFixed(6 - c1 - c2, used);
-            return [...used, ...remainder];
-        }
-
-        function generateConsecutiveInRange(start, end) {
-            let n = Math.floor(Math.random() * (end - start)) + start; 
-            const seed = [n, n+1];
-            const remainder = generateRandomFixed(4, seed);
-            return [...seed, ...remainder];
-        }
-
-        function generateConsecutiveAny() {
-            let n = Math.floor(Math.random() * 44) + 1; 
-            const seed = [n, n+1];
-            const remainder = generateRandomFixed(4, seed);
-            return [...seed, ...remainder];
-        }
-
-        function generateEndingMatch() {
-            const digit = Math.floor(Math.random() * 10);
-            const candidates = [digit, digit+10, digit+20, digit+30, digit+40].filter(n => n >= 1 && n <= 45);
-            if (candidates.length < 2) return generateRandomFixed(6); 
-            
-            const shuffled = candidates.sort(() => 0.5 - Math.random());
-            const seed = shuffled.slice(0, 2);
-            const remainder = generateRandomFixed(4, seed);
-            return [...seed, ...remainder];
-        }
-        
-        function generateLowHighMix() {
-            const lowSet = new Set();
-            while(lowSet.size < 3) lowSet.add(Math.floor(Math.random() * 23) + 1);
-            const highSet = new Set();
-            while(highSet.size < 3) highSet.add(Math.floor(Math.random() * (45 - 24 + 1)) + 24);
-            return [...lowSet, ...highSet];
-        }
-
-        function generateBalanced() {
-            const ranges = [
-                {s: 1, e: 10}, {s: 11, e: 20}, {s: 21, e: 30}, {s: 31, e: 40}, {s: 41, e: 45}
-            ];
-            const nums = new Set();
-            ranges.forEach(r => {
-                const n = Math.floor(Math.random() * (r.e - r.s + 1)) + r.s;
-                nums.add(n);
-            });
-            while(nums.size < 6) {
-                nums.add(Math.floor(Math.random() * 45) + 1);
-            }
-            return Array.from(nums);
-        }
-
-        // --- AI Logic ---
-        async function generateLottoAI() {
-            closeGlobalResult();
-            const keyToUse = userApiKey || apiKey;
-            
-            if(aiGenBtn) {
-                aiGenBtn.disabled = true;
-                aiGenBtn.classList.add('opacity-70', 'cursor-wait');
-            }
-
-            if (!keyToUse) {
-                setTimeout(() => {
-                    const patternData = applyRandomPattern();
-                    currentNumbers = patternData.numbers;
-                    displayNumbers(currentNumbers);
-                    addGameToData(currentNumbers, "AI 추천 (대체)");
-                    showToast("AI가 영감을 받는 중 잠들었네요 😴 대신 행운의 패턴 번호를 드려요!");
-                    
-                    if(aiGenBtn) {
-                        aiGenBtn.disabled = false;
-                        aiGenBtn.classList.remove('opacity-70', 'cursor-wait');
-                    }
-                }, 500);
-                return;
-            }
-
-            aiLoader.style.display = 'flex';
-            generatedBallsArea.innerHTML = '';
-            
-            try {
-                const seed = Date.now();
-                const prompt = `Generate 6 unique lotto numbers (1-45).
-Analyze recent trends using a statistical approach (e.g., standard deviation, hot/cold numbers, even/odd ratio).
-Provide a creative, luck-based reason for this combination in Korean.
-IMPORTANT: Return ONLY a raw JSON object. No Markdown, no code blocks, no intro/outro text.
-Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
-                
-                const responseText = await callGeminiTextAPI(prompt);
-                
-                let result;
-                try {
-                    let cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-                    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        cleanText = jsonMatch[0];
-                    }
-                    result = JSON.parse(cleanText);
-                } catch (e) {
-                    throw new Error("AI 응답 해석 실패");
-                }
-
-                if (!result.numbers || result.numbers.length !== 6) throw new Error("번호 생성 오류");
-
-                currentNumbers = result.numbers.sort((a, b) => a - b);
-                displayNumbers(currentNumbers);
-                addGameToData(currentNumbers, "AI 추천");
-                if (result.reason) showToast("✨ AI: " + result.reason);
-
-            } catch (err) {
-                console.error(err);
-                const patternData = applyRandomPattern();
-                currentNumbers = patternData.numbers;
-                displayNumbers(currentNumbers);
-                addGameToData(currentNumbers, "AI 추천 (대체)");
-                showToast("AI 연결이 원활하지 않아 패턴 번호를 추천해드려요!");
-            } finally {
-                aiLoader.style.display = 'none';
-                if(aiGenBtn) {
-                    aiGenBtn.disabled = false;
-                    aiGenBtn.classList.remove('opacity-70', 'cursor-wait');
-                }
-            }
-        }
-
-        async function callGeminiTextAPI(prompt) {
-             const keyToUse = userApiKey || apiKey;
-             if (!keyToUse) throw new Error("Missing API Key");
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`;
-            
-            const payload = {
-                contents: [{
-                    parts: [{ text: prompt }]
-                }],
-                generationConfig: {
-                    temperature: 0.9,
-                    topK: 40,
-                    topP: 0.95
-                }
-            };
-
-            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
-            const data = await response.json();
-            return data.candidates[0].content.parts[0].text;
-        }
-
-        // --- Standard UI Functions ---
-        function renderHistory(round) {
-            historyList.innerHTML = ''; 
-            displayedCount = 0;
-            currentWinData = winResults[round] || null; 
-            currentFilteredGames = historyData.filter(game => game.round === round);
-            totalCountBadge.textContent = `(총 ${currentFilteredGames.length}건)`;
-
-            if (currentFilteredGames.length === 0) {
-                historyList.innerHTML = `<div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400 py-10"><i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i><span class="text-xs">${round}회차 기록이 없습니다.</span></div>`;
-                return;
-            }
-            loadMoreHistory();
-            if (currentWinData) { calculateAndShowSummary(currentWinData); }
-        }
-
-        function loadMoreHistory() {
-            const nextBatch = currentFilteredGames.slice(displayedCount, displayedCount + PAGE_SIZE);
-            if(nextBatch.length === 0) return;
-            const fragment = document.createDocumentFragment();
-            nextBatch.forEach(game => {
-                const item = createHistoryItemElement(game);
-                if(currentWinData) {
-                    const winArr = [currentWinData.drwtNo1, currentWinData.drwtNo2, currentWinData.drwtNo3, currentWinData.drwtNo4, currentWinData.drwtNo5, currentWinData.drwtNo6];
-                    applyWinStyleToItem(item, winArr, currentWinData.bnusNo, game.numbers);
-                }
-                fragment.appendChild(item);
-            });
-            historyList.appendChild(fragment);
-            displayedCount += nextBatch.length;
-        }
-
-        function applyWinStyleToItem(item, winArr, bonus, myNumbers) {
-            let matchCount = 0; let isBonusMatched = false;
-            myNumbers.forEach(num => { if (winArr.includes(num)) matchCount++; else if (num === bonus) isBonusMatched = true; });
-            let rank = 6;
-            if (matchCount === 6) rank = 1; else if (matchCount === 5 && isBonusMatched) rank = 2; else if (matchCount === 5) rank = 3; else if (matchCount === 4) rank = 4; else if (matchCount === 3) rank = 5;
-
-            const ballElements = item.querySelectorAll('.ball-container .lotto-ball');
-            ballElements.forEach(ball => {
-                const num = parseInt(ball.dataset.num);
-                if (winArr.includes(num)) { ball.classList.add('matched'); ball.classList.remove('dimmed'); }
-                else if (num === bonus) {
-                    if (rank === 2) { ball.classList.add('bonus-matched'); ball.classList.remove('dimmed'); }
-                    else { ball.classList.remove('matched'); ball.classList.remove('bonus-matched'); ball.classList.add('dimmed'); }
-                } else { ball.classList.remove('matched'); ball.classList.remove('bonus-matched'); ball.classList.add('dimmed'); }
-            });
-
-            const rankBadge = item.querySelector('.rank-badge');
-            if (rankBadge) {
-                let rankText = ''; let rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; 
-                if (rank === 1) { rankText = '🏆 1등 당첨!'; rankClass = 'text-red-600 pl-2 border-l border-red-200'; }
-                else if (rank === 2) { rankText = '🥈 2등 당첨!'; rankClass = 'text-orange-600 pl-2 border-l border-orange-200'; }
-                else if (rank === 3) { rankText = '🥉 3등 당첨!'; rankClass = 'text-yellow-600 pl-2 border-l border-yellow-200'; }
-                else if (rank === 4) { rankText = '4등 (5만원)'; rankClass = 'text-blue-600 pl-2 border-l border-blue-200'; }
-                else if (rank === 5) { rankText = '5등 (5천원)'; rankClass = 'text-green-600 pl-2 border-l border-green-200'; }
-                else { rankText = '낙첨'; rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; }
-                
-                rankBadge.textContent = rankText; rankBadge.className = `rank-badge text-[10px] font-bold ml-2 ${rankClass}`; rankBadge.classList.remove('hidden');
-            }
-        }
-
-        function calculateAndShowSummary(winData) {
-            const winArr = [winData.drwtNo1, winData.drwtNo2, winData.drwtNo3, winData.drwtNo4, winData.drwtNo5, winData.drwtNo6];
-            const bonus = winData.bnusNo;
-            let counts = { 1:0, 2:0, 3:0, 4:0, 5:0, fail:0 }; let bestRank = 6;
-            currentFilteredGames.forEach(game => {
-                const nums = game.numbers; let matches = nums.filter(n => winArr.includes(n)).length; let bonusMatch = nums.includes(bonus); let rank = 6;
-                if(matches === 6) rank = 1; else if(matches === 5 && bonusMatch) rank = 2; else if(matches === 5) rank = 3; else if(matches === 4) rank = 4; else if(matches === 3) rank = 5;
-                if(rank < 6) counts[rank]++; else counts.fail++; if(rank < bestRank) bestRank = rank;
-            });
-            const totalWins = counts[1] + counts[2] + counts[3] + counts[4] + counts[5]; displayGlobalResult(bestRank, totalWins, counts);
-        }
-
-        function displayGlobalResult(bestRank, totalWins, counts) {
-            let title = "", desc = "", colorClass = "";
-            if (bestRank === 1) { title = "🍀 대박! 1등 당첨! 🍀"; desc = "오늘이 바로 그날입니다! 인생 역전 축하드립니다!"; colorClass = "text-yellow-600"; }
-            else if (bestRank === 2) { title = "🍀 2등 당첨! 축하합니다! 🍀"; desc = "정말 아깝지만 대단한 결과입니다! 축하드려요!"; colorClass = "text-gray-600"; }
-            else if (bestRank === 3) { title = "🍀 3등 당첨! 🍀"; desc = "운이 좋으시네요! 맛있는 거 사드세요."; colorClass = "text-orange-600"; }
-            else if (bestRank === 4) { title = "🍀 4등 당첨 🍀"; desc = "소소한 행복! 5만원 축하드려요."; colorClass = "text-blue-600"; }
-            else if (bestRank === 5) { title = "🍀 5등 당첨 🍀"; desc = "본전은 찾으셨네요! 다음을 노려보세요."; colorClass = "text-green-600"; }
-            else { title = "꽝.. 다음 기회에.. 😭"; desc = "아쉽지만 이번엔 운이 없었네요. 힘내세요!"; colorClass = "text-gray-500"; }
-            if (totalWins > 0) {
-                 let summary = `총 <b class="text-indigo-600">${totalWins}</b>건 당첨! (`;
-                 let details = []; if(counts[1] > 0) details.push(`1등:${counts[1]}건`); if(counts[2] > 0) details.push(`2등:${counts[2]}건`); if(counts[3] > 0) details.push(`3등:${counts[3]}건`); if(counts[4] > 0) details.push(`4등:${counts[4]}건`); if(counts[5] > 0) details.push(`5등:${counts[5]}건`);
-                 summary += details.join(', ') + ")"; desc += `<br><span class="mt-1 block text-gray-600 text-xs">${summary}</span>`;
-            } showGlobalResult(title, desc, colorClass);
-        }
-
-        function createHistoryItemElement(game) {
-            const item = document.createElement('div');
-            item.dataset.numbers = JSON.stringify(game.numbers); item.dataset.id = game.id;
-            item.className = 'history-item bg-white bg-opacity-80 p-2 rounded-lg border border-gray-100 flex flex-col shadow-sm items-start';
-            const contentRow = document.createElement('div'); contentRow.className = 'flex justify-between w-full items-center';
-            const leftDiv = document.createElement('div'); leftDiv.className = 'flex flex-col';
-            const ballsContainer = document.createElement('div'); ballsContainer.className = 'flex ball-container items-center gap-1';
-            game.numbers.forEach(num => {
-                const smallBall = document.createElement('div'); smallBall.className = `lotto-ball small-ball ${getBallColorClass(num)}`; smallBall.textContent = num; smallBall.dataset.num = num; ballsContainer.appendChild(smallBall);
-            });
-            leftDiv.appendChild(ballsContainer);
-            
-            if (game.tag) {
-                const metaDiv = document.createElement('div'); metaDiv.className = 'flex items-center mt-1 ml-1 meta-info';
-                const tagSpan = document.createElement('span');
-                let colorClass = 'text-gray-400', icon = '';
-                if (game.tag.includes('스캔') || game.tag.includes('분석')) { colorClass = 'text-teal-600'; icon = '⚡ '; }
-                else if (game.tag.includes('수동')) { colorClass = 'text-orange-500'; icon = '👆 '; }
-                else if (game.tag.includes('AI')) { colorClass = 'text-purple-600'; icon = '✨ '; }
-                else if (game.tag.includes('랜덤') || game.tag.includes('패턴')) { colorClass = 'text-blue-500'; icon = '⚡ '; }
-                tagSpan.className = `text-[10px] font-bold ${colorClass}`; tagSpan.textContent = icon + game.tag;
-                metaDiv.appendChild(tagSpan);
-                const rankSpan = document.createElement('span'); rankSpan.className = 'rank-badge text-[10px] font-bold ml-2 hidden'; 
-                metaDiv.appendChild(rankSpan); leftDiv.appendChild(metaDiv);
-            }
-            const rightDiv = document.createElement('div'); rightDiv.className = 'flex flex-col items-end gap-1';
-            const dateObj = new Date(game.date); const timeStr = dateObj.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-            const timeSpan = document.createElement('span'); timeSpan.className = 'text-xs text-gray-400 whitespace-nowrap'; timeSpan.textContent = timeStr;
-            rightDiv.appendChild(timeSpan);
-            
-            const btnGroup = document.createElement('div');
-            btnGroup.className = 'item-actions flex gap-1';
-            
-            // [추가] 수정 버튼
-            const editBtn = document.createElement('button');
-            editBtn.className = 'action-btn text-gray-400 hover:text-blue-500 mr-2'; // mr-2 추가하여 간격 확보
-            editBtn.innerHTML = '<i class="fas fa-pencil-alt text-xs"></i>';
-            editBtn.onclick = function() { openEditModal(game.id); }; 
-            
-            const delBtn = document.createElement('button'); 
-            delBtn.className = 'action-btn text-gray-400 hover:text-red-500';
-            delBtn.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>'; 
-            delBtn.onclick = function() { openDeleteConfirmModal('SINGLE', game.id); };
-            
-            btnGroup.appendChild(editBtn); 
-            btnGroup.appendChild(delBtn); 
-            
-            rightDiv.appendChild(btnGroup); 
-            
-            contentRow.appendChild(leftDiv); contentRow.appendChild(rightDiv); item.appendChild(contentRow);
-            return item;
-        }
-
-        // [Utility Functions]
+        // --- Utility Functions ---
         function getBallColorClass(num) {
-            num = parseInt(num); if (num <= 10) return 'ball-yellow'; if (num <= 20) return 'ball-blue'; if (num <= 30) return 'ball-red'; if (num <= 40) return 'ball-gray'; return 'ball-green';
+            num = parseInt(num); 
+            if (num <= 10) return 'ball-yellow'; 
+            if (num <= 20) return 'ball-blue'; 
+            if (num <= 30) return 'ball-red'; 
+            if (num <= 40) return 'ball-gray'; 
+            return 'ball-green';
         }
-        function displayNumbers(numbers) {
-            generatedBallsArea.innerHTML = '';
-            numbers.forEach((num, index) => { const ball = document.createElement('div'); ball.className = `lotto-ball ${getBallColorClass(num)}`; ball.textContent = num; ball.style.animationDelay = `${index * 0.1}s`; generatedBallsArea.appendChild(ball); });
-        }
-        function showGlobalResult(title, desc, colorClass) {
-            globalRankTitle.textContent = title; globalRankTitle.className = `text-2xl font-bold mb-1 mt-2 ${colorClass}`; globalRankDesc.innerHTML = desc; 
-            globalResultOverlay.classList.remove('hidden'); globalResultOverlay.style.opacity = '0'; setTimeout(() => { globalResultOverlay.style.transition = 'opacity 0.3s'; globalResultOverlay.style.opacity = '1'; }, 10);
-        }
-        function closeGlobalResult() { globalResultOverlay.classList.add('hidden'); }
-        
-        // ... (Modal/Toast/Settings/Scan UI functions remain same as before, ensuring robust handling) ...
-        function openDeleteConfirmModal(type, id = null) {
-            const currentRoundCount = historyData.filter(g => g.round === currentRound).length;
-            if (type === 'ALL' && currentRoundCount === 0) { showToast("삭제할 이번 회차 기록이 없습니다."); return; }
-            deleteTargetId = id; 
-            if (type === 'ALL') { deleteModalTitle.textContent = `🗑️ ${currentRound}회차 기록 전체 삭제`; deleteModalDesc.innerHTML = `정말 <strong>${currentRound}회차</strong>의 모든 번호 생성 기록을 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.`; }
-            else { deleteModalTitle.textContent = "🗑️ 기록 삭제"; deleteModalDesc.innerHTML = "선택한 번호 기록을 삭제하시겠습니까?"; }
-            deleteConfirmModal.classList.remove('hidden'); setTimeout(() => { deleteConfirmModal.classList.add('opacity-100'); deleteConfirmModal.querySelector('div').classList.remove('scale-95'); deleteConfirmModal.querySelector('div').classList.add('scale-100'); }, 10);
-        }
-        function closeDeleteConfirmModal() { deleteConfirmModal.classList.remove('opacity-100'); deleteConfirmModal.querySelector('div').classList.remove('scale-100'); deleteConfirmModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { deleteConfirmModal.classList.add('hidden'); }, 300); deleteTargetId = null; }
-        function confirmDelete() {
-            if (deleteTargetId) { deleteGameFromData(deleteTargetId); showToast("기록이 삭제되었습니다."); }
-            else { clearCurrentRoundHistory(); generatedBallsArea.innerHTML = '<span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>'; currentNumbers = []; showToast(`${currentRound}회차 기록이 모두 삭제되었습니다.`); }
-            closeDeleteConfirmModal();
-        }
+
         function copyNumbers() {
             if (currentNumbers.length === 0) { showToast("먼저 번호를 생성해주세요."); return; }
             const textToCopy = currentNumbers.join(', '); const textArea = document.createElement("textarea"); textArea.value = textToCopy; textArea.style.position = 'fixed'; textArea.style.left = '-9999px'; document.body.appendChild(textArea); textArea.focus(); textArea.select();
             try { document.execCommand('copy'); showToast("번호가 복사되었습니다: " + textToCopy); } catch (err) { showToast("복사에 실패했습니다."); } document.body.removeChild(textArea);
         }
+
         function showToast(message, isError = false) {
-            const toast = document.getElementById('toast'); document.getElementById('toast-msg').textContent = message;
-            const icon = toast.querySelector('i'); if (isError) { toast.classList.remove('bg-gray-800'); toast.classList.add('bg-red-600'); icon.className = "fas fa-exclamation-circle"; } else { toast.classList.remove('bg-red-600'); toast.classList.add('bg-gray-800'); icon.className = "fas fa-check-circle"; }
-            
-            // 기존 타이머가 있다면 취소
-            if (toastTimeoutId) {
-                clearTimeout(toastTimeoutId);
+            const toast = document.getElementById('toast'); 
+            document.getElementById('toast-msg').textContent = message;
+            const icon = toast.querySelector('i'); 
+            if (isError) { 
+                toast.classList.remove('bg-gray-800'); 
+                toast.classList.add('bg-red-600'); 
+                icon.className = "fas fa-exclamation-circle"; 
+            } else { 
+                toast.classList.remove('bg-red-600'); 
+                toast.classList.add('bg-gray-800'); 
+                icon.className = "fas fa-check-circle"; 
             }
-
+            if (toastTimeoutId) { clearTimeout(toastTimeoutId); }
             toast.style.opacity = '1';
-
-            // 새로운 타이머 설정
-            toastTimeoutId = setTimeout(() => {
-                toast.style.opacity = '0';
-                toastTimeoutId = null; // 타이머 종료 후 ID 초기화
-            }, 2500);
+            toastTimeoutId = setTimeout(() => { toast.style.opacity = '0'; toastTimeoutId = null; }, 2500);
         }
 
         // [변경] 수동 입력 모달 열기 (생성 모드)
@@ -1026,37 +783,507 @@ Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
         
         function openSettings() { settingsModal.classList.remove('hidden'); setTimeout(() => { settingsModal.classList.add('opacity-100'); settingsModal.querySelector('div').classList.remove('scale-95'); settingsModal.querySelector('div').classList.add('scale-100'); }, 10); if (userApiKey) { userApiKeyInput.value = userApiKey; } notificationToggle.checked = isNotificationEnabled; }
         function closeSettings() { settingsModal.classList.remove('opacity-100'); settingsModal.querySelector('div').classList.remove('scale-100'); settingsModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { settingsModal.classList.add('hidden'); }, 300); }
-        function saveApiKey() { const inputKey = userApiKeyInput.value.trim(); userApiKey = inputKey; localStorage.setItem('user_gemini_key', inputKey); showToast("설정이 저장되었습니다."); closeSettings(); updateScanButtonState(); }
-        function updateScanButtonState() { const hasKey = userApiKey || apiKey; const scanBtn = document.getElementById('scan-btn'); const keyBadge = document.getElementById('key-badge'); if (hasKey) { scanBtn.classList.remove('bg-gray-400'); scanBtn.classList.add('bg-teal-500', 'hover:bg-teal-600'); keyBadge.classList.add('hidden'); } else { scanBtn.classList.remove('bg-teal-500', 'hover:bg-teal-600'); scanBtn.classList.add('bg-gray-400'); keyBadge.classList.remove('hidden'); } }
+        function saveApiKey() { const inputKey = userApiKeyInput.value.trim(); userApiKey = inputKey; localStorage.setItem('user_gemini_key', inputKey); showToast("설정이 저장되었습니다."); closeSettings(); updateScanButtonState(); }        
         function handleScanClick() { const hasKey = userApiKey || apiKey; if (!hasKey) { showToast("스캔 기능을 사용하려면 설정(⚙️)에서 API Key를 입력해주세요.", true); } else { triggerImageUpload(); } }
         function triggerImageUpload() { document.getElementById('image-input').click(); }
+
+
+        function displayNumbers(numbers) {
+            generatedBallsArea.innerHTML = '';
+            numbers.forEach((num, index) => { 
+                const ball = document.createElement('div'); 
+                ball.className = `lotto-ball ${getBallColorClass(num)}`; 
+                ball.textContent = num; 
+                ball.style.animationDelay = `${index * 0.1}s`; 
+                generatedBallsArea.appendChild(ball); 
+            });
+        }
+
+        function showGlobalResult(title, desc, colorClass) {
+            globalRankTitle.textContent = title; 
+            globalRankTitle.className = `text-2xl font-bold mb-1 mt-2 ${colorClass}`; 
+            globalRankDesc.innerHTML = desc; 
+            globalResultOverlay.classList.remove('hidden'); 
+            globalResultOverlay.style.opacity = '0'; 
+            setTimeout(() => { 
+                globalResultOverlay.style.transition = 'opacity 0.3s'; 
+                globalResultOverlay.style.opacity = '1'; 
+            }, 10);
+        }
+
+        function closeGlobalResult() { 
+            globalResultOverlay.classList.add('hidden'); 
+        }
+
+        // ... (Modal/Toast/Settings/Scan UI functions remain same as before, ensuring robust handling) ...
+        function openDeleteConfirmModal(type, id = null) {
+            const currentRoundCount = historyData.filter(g => g.round === currentRound).length;
+            if (type === 'ALL' && currentRoundCount === 0) { showToast("삭제할 이번 회차 기록이 없습니다."); return; }
+            deleteTargetId = id; 
+            if (type === 'ALL') { deleteModalTitle.textContent = `🗑️ ${currentRound}회차 기록 전체 삭제`; deleteModalDesc.innerHTML = `정말 <strong>${currentRound}회차</strong>의 모든 번호 생성 기록을 삭제하시겠습니까?<br>이 작업은 되돌릴 수 없습니다.`; }
+            else { deleteModalTitle.textContent = "🗑️ 기록 삭제"; deleteModalDesc.innerHTML = "선택한 번호 기록을 삭제하시겠습니까?"; }
+            deleteConfirmModal.classList.remove('hidden'); setTimeout(() => { deleteConfirmModal.classList.add('opacity-100'); deleteConfirmModal.querySelector('div').classList.remove('scale-95'); deleteConfirmModal.querySelector('div').classList.add('scale-100'); }, 10);
+        }
+
+        function closeDeleteConfirmModal() { deleteConfirmModal.classList.remove('opacity-100'); deleteConfirmModal.querySelector('div').classList.remove('scale-100'); deleteConfirmModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { deleteConfirmModal.classList.add('hidden'); }, 300); deleteTargetId = null; }
+
+        function confirmDelete() {
+            if (deleteTargetId) { deleteGameFromData(deleteTargetId); showToast("기록이 삭제되었습니다."); }
+            else { clearCurrentRoundHistory(); generatedBallsArea.innerHTML = '<span class="text-gray-500 text-xs">버튼을 눌러 번호를 생성하세요</span>'; currentNumbers = []; showToast(`${currentRound}회차 기록이 모두 삭제되었습니다.`); }
+            closeDeleteConfirmModal();
+        }
+
+        function updateScanButtonState() { 
+            const hasKey = userApiKey || apiKey; 
+            const keyBadge = document.getElementById('key-badge'); 
+            if (hasKey) { 
+                scanBtn.classList.remove('bg-gray-400'); 
+                scanBtn.classList.add('bg-teal-500', 'hover:bg-teal-600'); 
+                if(keyBadge) keyBadge.classList.add('hidden'); 
+            } else { 
+                scanBtn.classList.remove('bg-teal-500', 'hover:bg-teal-600'); 
+                scanBtn.classList.add('bg-gray-400'); 
+                if(keyBadge) keyBadge.classList.remove('hidden'); 
+            } 
+        }
+
+        // --- Core Business Logic ---
+        function calculateCurrentRound() {
+            const startDate = new Date('2002-12-07T00:00:00'); 
+            const today = new Date();
+            const diffTime = Math.abs(today - startDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            return Math.floor((diffDays - 1) / 7) + 2;
+        }
+
+        function populateRoundSelect(maxRound) {
+            roundInput.innerHTML = '';
+            for (let i = maxRound; i >= 1; i--) {
+                const option = document.createElement('option');
+                option.value = i; 
+                option.textContent = i; 
+                option.className = "text-gray-800";
+                roundInput.appendChild(option);
+            }
+        }
+
+        function updateRoundInfo(round) {
+            historyRoundLabel.textContent = `${round}회`;
+            const startDate = new Date('2002-12-07T00:00:00');
+            const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
+            const year = drawDate.getFullYear(); 
+            const month = String(drawDate.getMonth() + 1).padStart(2, '0'); 
+            const day = String(drawDate.getDate()).padStart(2, '0');
+            drawDateSpan.textContent = `(${year}-${month}-${day})`;
+        }
+
+        function saveHistory() {
+            localStorage.setItem('lotto_history', JSON.stringify(historyData));
+        }
+
+        function addGameToData(numbers, tag) {
+            if (window.currentUser && window.addGameToFirestore) {
+                const game = { round: currentRound, numbers: numbers, tag: tag, date: new Date().toISOString() };
+                window.addGameToFirestore(game);
+            } else {
+                const game = { id: Date.now() + Math.random(), round: currentRound, numbers: numbers, tag: tag, date: new Date().toISOString() };
+                historyData.unshift(game); 
+                saveHistory(); 
+                renderHistory(currentRound);
+            }
+        }
+
+        function deleteGameFromData(id) {
+            if (window.currentUser && window.deleteGameFromFirestore) {
+                window.deleteGameFromFirestore(id);
+            } else {
+                historyData = historyData.filter(game => game.id !== id); 
+                saveHistory(); 
+                renderHistory(currentRound);
+            }
+        }
+        
+        function updateGameData(id, newNumbers) {
+            if (window.currentUser && window.updateGameInFirestore) {
+                window.updateGameInFirestore(id, newNumbers);
+            } else {
+                const index = historyData.findIndex(game => game.id === id);
+                if (index !== -1) {
+                    historyData[index].numbers = newNumbers;
+                    if (!historyData[index].tag.includes('(수정)')) {
+                        historyData[index].tag = "수동 (수정)";
+                    }
+                    saveHistory();
+                    renderHistory(currentRound);
+                }
+            }
+        }
+
+        function clearCurrentRoundHistory() {
+             if (window.currentUser) {
+                 showToast("로그인 상태에서는 전체 삭제가 지원되지 않습니다.");
+             } else {
+                historyData = historyData.filter(game => game.round !== currentRound); 
+                saveHistory(); 
+                renderHistory(currentRound);
+             }
+        }
+
+        function generatePatternLotto() {
+            closeGlobalResult();
+            if(patternGenBtn) { patternGenBtn.disabled = true; patternGenBtn.classList.add('opacity-70', 'cursor-wait'); }
+            setTimeout(() => {
+                const patternData = applyRandomPattern();
+                currentNumbers = patternData.numbers;
+                displayNumbers(currentNumbers);
+                addGameToData(currentNumbers, patternData.name);
+                showToast(`패턴 적용: ${patternData.name}`);
+                if(patternGenBtn) { patternGenBtn.disabled = false; patternGenBtn.classList.remove('opacity-70', 'cursor-wait'); }
+            }, 300);
+        }
+
+        function applyRandomPattern() {
+            const patterns = [
+                { name: "⚡ 20번대 집중", weight: 1, func: () => generateDecadeFocus(21, 30, 3) },
+                { name: "⚡ 10&30번대 믹스", weight: 1, func: () => generateMixedDecades(11, 20, 2, 31, 40, 2) },
+                { name: "⚡ 40번대 연번", weight: 1, func: () => generateConsecutiveInRange(41, 45) },
+                { name: "⚡ 연번 포함", weight: 1, func: () => generateConsecutiveAny() },
+                { name: "⚡ 끝수 일치", weight: 1, func: () => generateEndingMatch() },
+                { name: "🎲 랜덤 생성", weight: 2, func: () => generateRandomFixed(6) },
+                { name: "⚡ 10번대 집중", weight: 1, func: () => generateDecadeFocus(11, 20, 3) },
+                { name: "⚡ 30번대 집중", weight: 1, func: () => generateDecadeFocus(31, 40, 3) },
+                { name: "⚡ 20~30번대 집중", weight: 1, func: () => generateDecadeFocus(21, 40, 4) },
+                { name: "⚖️ 저고(Low/High) 균형", weight: 1, func: () => generateLowHighMix() },
+                { name: "🌈 골고루 분포", weight: 1, func: () => generateBalanced() }
+            ];
+            const strategy = patterns[Math.floor(Math.random() * patterns.length)];
+            let nums = strategy.func();
+            if (!nums || nums.length !== 6 || new Set(nums).size !== 6) { return { numbers: generateRandomFixed(6), name: "🎲 랜덤 생성 (Fallback)" }; }
+            return { numbers: nums.sort((a,b)=>a-b), name: strategy.name };
+        }
+
+        function generateRandomFixed(count, exclude = []) { const nums = new Set(); while(nums.size < count) { let n = Math.floor(Math.random() * 45) + 1; if (!exclude.includes(n)) nums.add(n); } return Array.from(nums); }
+        function generateDecadeFocus(start, end, count) { const focusNums = new Set(); while(focusNums.size < count) { let n = Math.floor(Math.random() * (end - start + 1)) + start; focusNums.add(n); } const remainder = generateRandomFixed(6 - count, Array.from(focusNums)); return [...focusNums, ...remainder]; }
+        function generateMixedDecades(s1, e1, c1, s2, e2, c2) { const set1 = new Set(); while(set1.size < c1) set1.add(Math.floor(Math.random() * (e1 - s1 + 1)) + s1); const set2 = new Set(); while(set2.size < c2) set2.add(Math.floor(Math.random() * (e2 - s2 + 1)) + s2); const used = [...set1, ...set2]; const remainder = generateRandomFixed(6 - c1 - c2, used); return [...used, ...remainder]; }
+        function generateConsecutiveInRange(start, end) { let n = Math.floor(Math.random() * (end - start)) + start; const seed = [n, n+1]; const remainder = generateRandomFixed(4, seed); return [...seed, ...remainder]; }
+        function generateConsecutiveAny() { let n = Math.floor(Math.random() * 44) + 1; const seed = [n, n+1]; const remainder = generateRandomFixed(4, seed); return [...seed, ...remainder]; }
+        function generateEndingMatch() { const digit = Math.floor(Math.random() * 10); const candidates = [digit, digit+10, digit+20, digit+30, digit+40].filter(n => n >= 1 && n <= 45); if (candidates.length < 2) return generateRandomFixed(6); const shuffled = candidates.sort(() => 0.5 - Math.random()); const seed = shuffled.slice(0, 2); const remainder = generateRandomFixed(4, seed); return [...seed, ...remainder]; }
+        function generateLowHighMix() { const lowSet = new Set(); while(lowSet.size < 3) lowSet.add(Math.floor(Math.random() * 23) + 1); const highSet = new Set(); while(highSet.size < 3) highSet.add(Math.floor(Math.random() * (45 - 24 + 1)) + 24); return [...lowSet, ...highSet]; }
+        function generateBalanced() { const ranges = [ {s: 1, e: 10}, {s: 11, e: 20}, {s: 21, e: 30}, {s: 31, e: 40}, {s: 41, e: 45} ]; const nums = new Set(); ranges.forEach(r => { const n = Math.floor(Math.random() * (r.e - r.s + 1)) + r.s; nums.add(n); }); while(nums.size < 6) { nums.add(Math.floor(Math.random() * 45) + 1); } return Array.from(nums); }
+
+        async function generateLottoAI() {
+            closeGlobalResult();
+            const keyToUse = userApiKey || apiKey;
+            if(aiGenBtn) { aiGenBtn.disabled = true; aiGenBtn.classList.add('opacity-70', 'cursor-wait'); }
+            if (!keyToUse) {
+                setTimeout(() => {
+                    const patternData = applyRandomPattern();
+                    currentNumbers = patternData.numbers;
+                    displayNumbers(currentNumbers);
+                    addGameToData(currentNumbers, "AI 추천 (대체)");
+                    showToast("AI가 영감을 받는 중 잠들었네요 😴 대신 행운의 패턴 번호를 드려요!");
+                    if(aiGenBtn) { aiGenBtn.disabled = false; aiGenBtn.classList.remove('opacity-70', 'cursor-wait'); }
+                }, 500);
+                return;
+            }
+            aiLoader.style.display = 'flex'; generatedBallsArea.innerHTML = '';
+            try {
+                const seed = Date.now();
+                const prompt = `Generate 6 unique lotto numbers (1-45).
+Analyze recent trends using a statistical approach (e.g., standard deviation, hot/cold numbers, even/odd ratio).
+Provide a creative, luck-based reason for this combination in Korean.
+IMPORTANT: Return ONLY a raw JSON object. No Markdown, no code blocks, no intro/outro text.
+Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`; 
+                const responseText = await callGeminiTextAPI(prompt);
+                let result;
+                try { const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim(); result = JSON.parse(cleanText); } catch (e) { throw new Error("AI 응답 해석 실패"); }
+                if (!result.numbers || result.numbers.length !== 6) throw new Error("번호 생성 오류");
+                currentNumbers = result.numbers.sort((a, b) => a - b); displayNumbers(currentNumbers); addGameToData(currentNumbers, "AI 추천");
+                if (result.reason) showToast("✨ AI: " + result.reason);
+            } catch (err) {
+                console.error(err); const patternData = applyRandomPattern(); currentNumbers = patternData.numbers; displayNumbers(currentNumbers); addGameToData(currentNumbers, "AI 추천 (대체)"); showToast("AI 연결이 원활하지 않아 패턴 번호를 추천해드려요!");
+            } finally {
+                aiLoader.style.display = 'none'; if(aiGenBtn) { aiGenBtn.disabled = false; aiGenBtn.classList.remove('opacity-70', 'cursor-wait'); }
+            }
+        }
+        async function callGeminiTextAPI(prompt) { const keyToUse = userApiKey || apiKey; if (!keyToUse) throw new Error("Missing API Key"); const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`; const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.9, topK: 40, topP: 0.95 } }; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`); const data = await response.json(); return data.candidates[0].content.parts[0].text; }
+
+        function openSimulationModal() {
+            simulationModal.classList.remove('hidden');
+            setTimeout(() => { simulationModal.classList.add('opacity-100'); simulationModal.querySelector('div').classList.remove('scale-95'); simulationModal.querySelector('div').classList.add('scale-100'); }, 10);
+            simTargetRound.textContent = `${currentRound}회차`;
+            if (winResults[currentRound]) {
+                const w = winResults[currentRound];
+                simWinNums.textContent = `당첨: ${w.drwtNo1},${w.drwtNo2},${w.drwtNo3},${w.drwtNo4},${w.drwtNo5},${w.drwtNo6} + ${w.bnusNo}`;
+                simState.targetNumbers = [w.drwtNo1, w.drwtNo2, w.drwtNo3, w.drwtNo4, w.drwtNo5, w.drwtNo6];
+                simState.targetBonus = w.bnusNo;
+                simActionBtn.disabled = false; simActionBtn.classList.remove('bg-gray-400'); simActionBtn.classList.add('bg-indigo-600'); simActionBtn.textContent = '시작하기';
+            } else {
+                simWinNums.textContent = "최신 회차 결과가 없습니다. '결과 확인'을 먼저 해주세요.";
+                simActionBtn.disabled = true; simActionBtn.classList.remove('bg-indigo-600'); simActionBtn.classList.add('bg-gray-400'); simActionBtn.textContent = '결과 데이터 필요';
+            }
+        }
+        function closeSimulationModal() { if (simState.isRunning) toggleSimulation(); simulationModal.classList.remove('opacity-100'); simulationModal.querySelector('div').classList.remove('scale-100'); simulationModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { simulationModal.classList.add('hidden'); }, 300); }
+        function toggleSimulation() {
+            if (simState.isRunning) {
+                simState.isRunning = false;
+                simActionBtn.textContent = "다시 시작하기"; simActionBtn.classList.remove('bg-red-500', 'hover:bg-red-600'); simActionBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            } else {
+                if (!simState.targetNumbers.length) { showToast("당첨 번호 정보가 없습니다."); return; }
+                simState.isRunning = true;
+                simActionBtn.textContent = "중지"; simActionBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700'); simActionBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+                runSimulationLoop();
+            }
+        }
+        function runSimulationLoop() {
+            if (!simState.isRunning) return;
+            const BATCH_SIZE = 100; 
+            for (let i = 0; i < BATCH_SIZE; i++) {
+                simState.count++;
+                const myNums = generateRandomFixed(6).sort((a,b)=>a-b);
+                let matchCount = 0; let bonusMatch = false;
+                myNums.forEach(n => { if (simState.targetNumbers.includes(n)) matchCount++; else if (n === simState.targetBonus) bonusMatch = true; });
+                let rank = 7; if (matchCount === 6) rank = 1; else if (matchCount === 5 && bonusMatch) rank = 2; else if (matchCount === 5) rank = 3; else if (matchCount === 4) rank = 4; else if (matchCount === 3) rank = 5;
+                if (rank < simState.bestRank) {
+                    simState.bestRank = rank; updateSimUI(rank); 
+                    if (rank === 1) { simState.isRunning = false; simActionBtn.textContent = "1등 당첨! (종료)"; alert(`축하합니다! ${simState.count.toLocaleString()}번 만에 1등에 당첨되셨습니다!\n총 비용: ${(simState.count * 1000).toLocaleString()}원`); return; }
+                }
+            }
+            updateSimUI();
+            requestAnimationFrame(runSimulationLoop);
+        }
+        function updateSimUI(newBestRank = null) {
+            simCountEl.textContent = `${simState.count.toLocaleString()}회`; simCostEl.textContent = `${(simState.count * 1000).toLocaleString()}원`;
+            if (simState.bestRank < 7) { simBestRankEl.textContent = `${simState.bestRank}등`; simBestRankEl.className = "font-bold text-red-600"; }
+            if (newBestRank) { const log = document.createElement('div'); log.textContent = `${simState.count}회차: ${newBestRank}등 당첨!`; simLogEl.prepend(log); }
+        }
+
+        // --- History Rendering ---
+        function createHistoryItemElement(game) {
+            const item = document.createElement('div');
+            item.dataset.numbers = JSON.stringify(game.numbers); 
+            item.dataset.id = game.id;
+            item.className = 'history-item bg-white bg-opacity-80 p-2 rounded-lg border border-gray-100 flex flex-col shadow-sm items-start';
+            
+            const contentRow = document.createElement('div'); 
+            contentRow.className = 'flex justify-between w-full items-center';
+            
+            const leftDiv = document.createElement('div'); 
+            leftDiv.className = 'flex flex-col';
+            
+            const ballsContainer = document.createElement('div'); 
+            ballsContainer.className = 'flex ball-container items-center gap-1';
+            
+            game.numbers.forEach(num => {
+                const smallBall = document.createElement('div'); 
+                smallBall.className = `lotto-ball small-ball ${getBallColorClass(num)}`; 
+                smallBall.textContent = num; 
+                smallBall.dataset.num = num; 
+                ballsContainer.appendChild(smallBall);
+            });
+            leftDiv.appendChild(ballsContainer);
+            
+            if (game.tag) {
+                const metaDiv = document.createElement('div'); 
+                metaDiv.className = 'flex items-center mt-1 ml-1 meta-info';
+                
+                const tagSpan = document.createElement('span');
+                let colorClass = 'text-gray-400', icon = '';
+                if (game.tag.includes('스캔') || game.tag.includes('분석')) { colorClass = 'text-teal-600'; icon = '⚡ '; }
+                else if (game.tag.includes('수동')) { colorClass = 'text-orange-500'; icon = '👆 '; }
+                else if (game.tag.includes('AI')) { colorClass = 'text-purple-600'; icon = '✨ '; }
+                else if (game.tag.includes('랜덤') || game.tag.includes('패턴')) { colorClass = 'text-blue-500'; icon = '⚡ '; }
+                
+                tagSpan.className = `text-[10px] font-bold ${colorClass}`; 
+                tagSpan.textContent = icon + game.tag;
+                metaDiv.appendChild(tagSpan);
+                
+                const rankSpan = document.createElement('span'); 
+                rankSpan.className = 'rank-badge text-[10px] font-bold ml-2 hidden'; 
+                metaDiv.appendChild(rankSpan); 
+                leftDiv.appendChild(metaDiv);
+            }
+            
+            const rightDiv = document.createElement('div'); 
+            rightDiv.className = 'flex flex-col items-end gap-1';
+            
+            const dateObj = new Date(game.date); 
+            const timeStr = dateObj.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            
+            const timeSpan = document.createElement('span'); 
+            timeSpan.className = 'text-xs text-gray-400 whitespace-nowrap'; 
+            timeSpan.textContent = timeStr;
+            rightDiv.appendChild(timeSpan);
+            
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'item-actions flex gap-1';
+            
+            const editBtn = document.createElement('button');
+            editBtn.className = 'action-btn text-gray-400 hover:text-blue-500 mr-2'; 
+            editBtn.innerHTML = '<i class="fas fa-pencil-alt text-xs"></i>';
+            editBtn.onclick = function() { openEditModal(game.id); }; 
+            
+            const delBtn = document.createElement('button'); 
+            delBtn.className = 'action-btn text-gray-400 hover:text-red-500';
+            delBtn.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>'; 
+            delBtn.onclick = function() { openDeleteConfirmModal('SINGLE', game.id); };
+            
+            btnGroup.appendChild(editBtn); 
+            btnGroup.appendChild(delBtn); 
+            
+            rightDiv.appendChild(btnGroup); 
+            
+            contentRow.appendChild(leftDiv); 
+            contentRow.appendChild(rightDiv); 
+            item.appendChild(contentRow);
+            
+            return item;
+        }
+
+        function applyWinStyleToItem(item, winArr, bonus, myNumbers) {
+            let matchCount = 0; 
+            let isBonusMatched = false;
+            
+            myNumbers.forEach(num => { 
+                if (winArr.includes(num)) matchCount++; 
+                else if (num === bonus) isBonusMatched = true; 
+            });
+            
+            let rank = 6;
+            if (matchCount === 6) rank = 1; 
+            else if (matchCount === 5 && isBonusMatched) rank = 2; 
+            else if (matchCount === 5) rank = 3; 
+            else if (matchCount === 4) rank = 4; 
+            else if (matchCount === 3) rank = 5;
+
+            const ballElements = item.querySelectorAll('.ball-container .lotto-ball');
+            ballElements.forEach(ball => {
+                const num = parseInt(ball.dataset.num);
+                if (winArr.includes(num)) { 
+                    ball.classList.add('matched'); 
+                    ball.classList.remove('dimmed'); 
+                } else if (num === bonus) {
+                    if (rank === 2) { 
+                        ball.classList.add('bonus-matched'); 
+                        ball.classList.remove('dimmed'); 
+                    } else { 
+                        ball.classList.remove('matched'); 
+                        ball.classList.remove('bonus-matched'); 
+                        ball.classList.add('dimmed'); 
+                    }
+                } else { 
+                    ball.classList.remove('matched'); 
+                    ball.classList.remove('bonus-matched'); 
+                    ball.classList.add('dimmed'); 
+                }
+            });
+
+            const rankBadge = item.querySelector('.rank-badge');
+            if (rankBadge) {
+                let rankText = ''; 
+                let rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; 
+                
+                if (rank === 1) { rankText = '🏆 1등 당첨!'; rankClass = 'text-red-600 pl-2 border-l border-red-200'; }
+                else if (rank === 2) { rankText = '🥈 2등 당첨!'; rankClass = 'text-orange-600 pl-2 border-l border-orange-200'; }
+                else if (rank === 3) { rankText = '🥉 3등 당첨!'; rankClass = 'text-yellow-600 pl-2 border-l border-yellow-200'; }
+                else if (rank === 4) { rankText = '4등 (5만원)'; rankClass = 'text-blue-600 pl-2 border-l border-blue-200'; }
+                else if (rank === 5) { rankText = '5등 (5천원)'; rankClass = 'text-green-600 pl-2 border-l border-green-200'; }
+                else { rankText = '낙첨'; rankClass = 'text-gray-400 pl-2 border-l border-gray-300'; }
+                
+                rankBadge.textContent = rankText; 
+                rankBadge.className = `rank-badge text-[10px] font-bold ml-2 ${rankClass}`; 
+                rankBadge.classList.remove('hidden');
+            }
+        }
+
+        function calculateAndShowSummary(winData) {
+            const winArr = [winData.drwtNo1, winData.drwtNo2, winData.drwtNo3, winData.drwtNo4, winData.drwtNo5, winData.drwtNo6];
+            const bonus = winData.bnusNo;
+            
+            let counts = { 1:0, 2:0, 3:0, 4:0, 5:0, fail:0 }; 
+            let bestRank = 6;
+            
+            currentFilteredGames.forEach(game => {
+                const nums = game.numbers; 
+                let matches = nums.filter(n => winArr.includes(n)).length; 
+                let bonusMatch = nums.includes(bonus); 
+                let rank = 6;
+                
+                if(matches === 6) rank = 1; 
+                else if(matches === 5 && bonusMatch) rank = 2; 
+                else if(matches === 5) rank = 3; 
+                else if(matches === 4) rank = 4; 
+                else if(matches === 3) rank = 5;
+                
+                if(rank < 6) counts[rank]++; else counts.fail++; 
+                if(rank < bestRank) bestRank = rank;
+            });
+            
+            const totalWins = counts[1] + counts[2] + counts[3] + counts[4] + counts[5]; 
+            displayGlobalResult(bestRank, totalWins, counts);
+        }
+
+        function displayGlobalResult(bestRank, totalWins, counts) {
+            let title = "", desc = "", colorClass = "";
+            if (bestRank === 1) { title = "🍀 대박! 1등 당첨! 🍀"; desc = "오늘이 바로 그날입니다! 인생 역전 축하드립니다!"; colorClass = "text-yellow-600"; }
+            else if (bestRank === 2) { title = "🍀 2등 당첨! 축하합니다! 🍀"; desc = "정말 아깝지만 대단한 결과입니다! 축하드려요!"; colorClass = "text-gray-600"; }
+            else if (bestRank === 3) { title = "🍀 3등 당첨! 🍀"; desc = "운이 좋으시네요! 맛있는 거 사드세요."; colorClass = "text-orange-600"; }
+            else if (bestRank === 4) { title = "🍀 4등 당첨 🍀"; desc = "소소한 행복! 5만원 축하드려요."; colorClass = "text-blue-600"; }
+            else if (bestRank === 5) { title = "🍀 5등 당첨 🍀"; desc = "본전은 찾으셨네요! 다음을 노려보세요."; colorClass = "text-green-600"; }
+            else { title = "꽝.. 다음 기회에.. 😭"; desc = "아쉽지만 이번엔 운이 없었네요. 힘내세요!"; colorClass = "text-gray-500"; }
+            if (totalWins > 0) {
+                 let summary = `총 <b class="text-indigo-600">${totalWins}</b>건 당첨! (`;
+                 let details = []; if(counts[1] > 0) details.push(`1등:${counts[1]}건`); if(counts[2] > 0) details.push(`2등:${counts[2]}건`); if(counts[3] > 0) details.push(`3등:${counts[3]}건`); if(counts[4] > 0) details.push(`4등:${counts[4]}건`); if(counts[5] > 0) details.push(`5등:${counts[5]}건`);
+                 summary += details.join(', ') + ")"; desc += `<br><span class="mt-1 block text-gray-600 text-xs">${summary}</span>`;
+            } showGlobalResult(title, desc, colorClass);
+        }
+
+        function renderHistory(round) {
+            historyList.innerHTML = ''; 
+            displayedCount = 0;
+            currentWinData = winResults[round] || null; 
+            currentFilteredGames = historyData.filter(game => game.round === round);
+            totalCountBadge.textContent = `(총 ${currentFilteredGames.length}건)`;
+
+            if (currentFilteredGames.length === 0) {
+                historyList.innerHTML = `<div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400 py-10"><i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i><span class="text-xs">${round}회차 기록이 없습니다.</span></div>`;
+                return;
+            }
+            loadMoreHistory();
+            if (currentWinData) { calculateAndShowSummary(currentWinData); }
+        }
+
+        function loadMoreHistory() {
+            const nextBatch = currentFilteredGames.slice(displayedCount, displayedCount + PAGE_SIZE);
+            if(nextBatch.length === 0) return;
+            
+            const fragment = document.createDocumentFragment();
+            nextBatch.forEach(game => {
+                const item = createHistoryItemElement(game);
+                if(currentWinData) {
+                    const winArr = [currentWinData.drwtNo1, currentWinData.drwtNo2, currentWinData.drwtNo3, currentWinData.drwtNo4, currentWinData.drwtNo5, currentWinData.drwtNo6];
+                    applyWinStyleToItem(item, winArr, currentWinData.bnusNo, game.numbers);
+                }
+                fragment.appendChild(item);
+            });
+            
+            historyList.appendChild(fragment);
+            displayedCount += nextBatch.length;
+        }
+
+        // ... (Scan Functions - handleImageUpload, processSingleFile, processImage, runGeminiAnalysis, parseGeminiResponse, finishScan, parseLottoQR)
         function handleImageUpload(e) {
-            // [변경] 다중 파일 처리 로직 (multiple files)
             const files = e.target.files;
             if (!files || files.length === 0) return;
-
             scanLoader.style.display = 'flex';
-            
-            // Loop through all selected files asynchronously
             (async () => {
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
-                    // Update loading message
                     scanMessage.textContent = `${files.length}장 중 ${i + 1}번째 이미지 처리 중...`;
                     scanSubMessage.textContent = "AI가 로또 용지를 분석하고 있습니다";
-                    
-                    try {
-                        await processSingleFile(file);
-                    } catch (err) {
-                        console.error(`File ${i+1} processing error:`, err);
-                        showToast(`${i+1}번째 이미지 처리에 실패했습니다.`, true);
-                    }
+                    try { await processSingleFile(file); } catch (err) { console.error(`File ${i+1} processing error:`, err); showToast(`${i+1}번째 이미지 처리에 실패했습니다.`, true); }
                 }
-                
-                // All done
-                scanLoader.style.display = 'none';
-                e.target.value = ''; // Reset input
-                showToast("모든 이미지 처리가 완료되었습니다!");
+                scanLoader.style.display = 'none'; e.target.value = ''; showToast("모든 이미지 처리가 완료되었습니다!");
             })();
         }
 
@@ -1078,100 +1305,45 @@ Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
             });
         }
 
-        // [변경] processImage를 async로 변경하고 반환값 처리
-        async function processImage(img) {
-            const canvas = document.getElementById('scan-canvas');
-            const context = canvas.getContext('2d');
-            
-            // ... (canvas resizing logic same as before)
-            const scaleFactor = 1.5; 
-            canvas.width = img.width * scaleFactor; 
-            canvas.height = img.height * scaleFactor;
-            context.scale(scaleFactor, scaleFactor); 
-            context.drawImage(img, 0, 0); 
-            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-            
-            // 1. Try QR Code
-            const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-            if (code) {
-                const parsedGames = parseLottoQR(code.data);
-                if (parsedGames && parsedGames.length > 0) {
-                    finishScan(parsedGames, "QR 스캔");
-                    return; // Stop here if QR worked
-                }
-            }
-            
-            // 2. Try Gemini AI
-            // Note: We don't change text content here because handleImageUpload controls it
-            await runGeminiAnalysis(canvas.toDataURL("image/jpeg", 0.8));
-        }
-
-        async function runGeminiAnalysis(base64Image) {
-            try {
-                // [변경] 프롬프트 강화: JSON 포맷 강제 및 라벨링 명확화
-                const prompt = `Look at the lottery ticket in the image. Identify the rows of numbers (usually 6 numbers per row between 1 and 45). Ignore prices, dates, or serial numbers. 
-                Return the result as a JSON ARRAY of objects. Each object must have: 
-                - "label": String (e.g., "A", "B", "C", "D", "E"). If not visible, assign "A", "B", "C"... in order. 
-                - "numbers": Array of integers (the 6 lotto numbers). 
-                Example format: [{"label": "A", "numbers": [1, 2, 3, 4, 5, 6]}, {"label": "B", "numbers": [10, 11, 12, 13, 14, 15]}] 
-                Return ONLY the raw JSON string. No markdown, no "json" tags.`;
-                
-                const text = await callGeminiAPI(prompt, base64Image);
-                const extractedGames = parseGeminiResponse(text);
-                
-                if (extractedGames.length > 0) { 
-                    finishScan(extractedGames, "AI 스캔"); 
-                } else { 
-                    // 개별 이미지 실패 시 토스트만 띄우고 넘어감 (로더는 끄지 않음)
-                    console.log("No numbers found in this image");
-                }
-            } catch (err) { 
-                console.error(err); 
-                // 에러 발생 시에도 로더 끄지 않음 (상위 루프에서 제어)
-                if (err.message.includes('400') || err.message.includes('401') || err.message.includes('403')) { 
-                    setTimeout(() => openSettings(), 1500); 
-                }
-            }
-        }
-        
+        function processSingleFile(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = (event) => { const img = new Image(); img.onload = async () => { await processImage(img); resolve(); }; img.onerror = reject; img.src = event.target.result; }; reader.onerror = reject; reader.readAsDataURL(file); }); }
+        async function processImage(img) { const canvas = document.getElementById('scan-canvas'); const context = canvas.getContext('2d'); const scaleFactor = 1.5; canvas.width = img.width * scaleFactor; canvas.height = img.height * scaleFactor; context.scale(scaleFactor, scaleFactor); context.drawImage(img, 0, 0); const imageData = context.getImageData(0, 0, canvas.width, canvas.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { const parsedGames = parseLottoQR(code.data); if (parsedGames && parsedGames.length > 0) { finishScan(parsedGames, "QR 스캔"); return; } } await runGeminiAnalysis(canvas.toDataURL("image/jpeg", 0.8)); }
+        async function runGeminiAnalysis(base64Image) { try { 
+            const prompt = `Look at the lottery ticket in the image. Identify the rows of numbers (usually 6 numbers per row between 1 and 45). Ignore prices, dates, or serial numbers. Return the result as a JSON ARRAY of objects. Each object must have: - "label": String (e.g., "A", "B", "C"). If no label, use sequential letters. - "numbers": Array of integers. Example: [{"label": "A", "numbers": [1, 2, 3, 4, 5, 6]}] Return ONLY the JSON string. No markdown code blocks.`;
+            const text = await callGeminiAPI(prompt, base64Image); const extractedGames = parseGeminiResponse(text); if (extractedGames.length > 0) { finishScan(extractedGames, "AI 스캔"); } else { console.log("No numbers found"); } } catch (err) { console.error(err); if (err.message.includes('400') || err.message.includes('401') || err.message.includes('403')) { setTimeout(() => openSettings(), 1500); } } }
         async function callGeminiAPI(prompt, base64Image) { const keyToUse = userApiKey || apiKey; if (!keyToUse) { showToast("API 키가 설정되지 않았습니다...", true); throw new Error("Missing API Key"); } const cleanBase64 = base64Image.split(',')[1]; const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`; const payload = { contents: [{ parts: [ { text: prompt }, { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } } ] }] }; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) { throw new Error(`Gemini API Error: ${response.status}`); } const data = await response.json(); return data.candidates[0].content.parts[0].text; }
         
-        // [변경] 파싱 로직: JSON 파싱 우선, 실패 시 텍스트 파싱 (행 번호 제거 포함)
+        // [수정된 파싱 로직]
         function parseGeminiResponse(text) { 
             let games = [];
-            
-            // 1. Try JSON Parsing first (Best case)
-            try {
-                const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                const jsonStart = cleanText.indexOf('[');
-                const jsonEnd = cleanText.lastIndexOf(']');
-                if (jsonStart !== -1 && jsonEnd !== -1) {
-                    const jsonStr = cleanText.substring(jsonStart, jsonEnd + 1);
-                    const parsed = JSON.parse(jsonStr);
-                    // Validate structure
-                    parsed.forEach(p => {
-                        if (p.numbers && Array.isArray(p.numbers) && p.numbers.length >= 6) {
-                            // Take first 6 valid numbers
-                            const validNums = p.numbers.filter(n => typeof n === 'number' && n >= 1 && n <= 45).slice(0, 6).sort((a,b)=>a-b);
-                            if (validNums.length === 6) {
-                                games.push({ label: p.label || '자동', numbers: validNums });
-                            }
-                        }
-                    });
-                }
-            } catch (e) {
-                console.log("JSON parsing failed, falling back to text regex");
-            }
-            
+            // 1. JSON Parsing Attempt
+            try { 
+                const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim(); 
+                const jsonStart = cleanText.indexOf('['); 
+                const jsonEnd = cleanText.lastIndexOf(']'); 
+                if (jsonStart !== -1 && jsonEnd !== -1) { 
+                    const jsonStr = cleanText.substring(jsonStart, jsonEnd + 1); 
+                    const parsed = JSON.parse(jsonStr); 
+                    parsed.forEach(p => { 
+                        if (p.numbers && Array.isArray(p.numbers)) { 
+                            const validNums = p.numbers.filter(n => typeof n === 'number' && n >= 1 && n <= 45).slice(0, 6).sort((a,b)=>a-b); 
+                            if (validNums.length === 6) { games.push({ label: p.label || '자동', numbers: validNums }); } 
+                        } 
+                    }); 
+                } 
+            } catch (e) { console.log("JSON parsing failed, fallback to text regex"); }
             if (games.length > 0) return games;
 
-            // 2. Fallback: Text Regex Parsing (Cleaned up)
+            // 2. Text Parsing Fallback (Improved)
             const lines = text.split('\n'); 
             const labels = ['A', 'B', 'C', 'D', 'E'];
-            
+            let labelIndex = 0;
+
             lines.forEach(line => { 
-                // Remove potential row indices like "1.", "Row 1:", "| 1 |"
-                const cleanedLine = line.replace(/^(Row|Game)?\s*\d+[:.]?/i, '').replace(/^\|\s*\d+\s*\|/, '');
+                // Remove Markdown table syntax and row indices more aggressively
+                // e.g., "| 1 |", "1.", "Row 1:", "Game 1"
+                let cleanedLine = line
+                    .replace(/^\|?\s*(Row|Game)?\s*\d+[:.]?\s*\|?/, '') // Remove "Row 1", "1."
+                    .replace(/\|\s*$/, ''); // Remove trailing pipe
                 
                 const numsMatch = cleanedLine.match(/\d+/g); 
                 if (!numsMatch) return; 
@@ -1179,40 +1351,35 @@ Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
                 const validNums = numsMatch.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45); 
                 const uniqueNums = [...new Set(validNums)]; 
                 
+                // If we found a valid set of 6 numbers
                 if (uniqueNums.length >= 6) { 
-                    // If more than 6, take the LAST 6 (avoids picking up index numbers at the start)
+                    // Take the LAST 6 numbers found in the line to avoid index numbers
                     const gameNums = uniqueNums.slice(-6).sort((a, b) => a - b); 
                     
-                    // Assign label
-                    let label = labels[games.length % 5]; // Default A, B, C...
+                    // Assign label: Prefer extracted label, else use sequence
+                    let label = labels[labelIndex % 5]; 
                     const labelMatch = line.match(/([A-E])[:.)]/i); 
                     if (labelMatch) { label = labelMatch[1].toUpperCase(); } 
-                    
+                    else { labelIndex++; } // Only increment if auto-assigning
+
                     games.push({ label: label, numbers: gameNums }); 
                 } 
             }); 
             return games; 
         }
 
-        // [변경] finishScan: 로더 닫지 않음 (handleImageUpload가 제어)
         function finishScan(games, method) { 
-            // scanLoader.style.display = 'none'; // <-- REMOVED
+            // scanLoader.style.display = 'none'; // Controlled by handleImageUpload
             // closeGlobalResult(); 
-            
             if (games.length > 0) { currentNumbers = games[0].numbers; displayNumbers(currentNumbers); } 
-            
-            // Add to history (reverse loop to keep order A->E top-down if prepending)
-            // Actually, addGameToData unshifts, so to keep A at bottom and E at top (latest), 
-            // we should iterate normally or reverse depending on preference.
-            // Let's iterate normal so A is added first (bottom of history), E last (top of history)
-            // Or reverse so A is last added (top). Let's keep reverse for now.
+            // Use standard for loop to maintain order if extracted in order
+            // Or reverse if we want latest on top. Let's iterate normally but add to data which unshifts.
+            // If we want A at top, we should add E first.
             for (let i = games.length - 1; i >= 0; i--) { 
                 const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); 
                 addGameToData(games[i].numbers, `${method} ${label}`); 
             } 
-            // showToast(`${games.length}개의 게임을 추출했습니다!`); // Toast handled by parent
         }
-        
         function parseLottoQR(url) { try { if (!url.includes('dhlottery.co.kr') || !url.includes('v=')) return null; let params = url.split('v=')[1]; if (!params) return null; if (params.includes('&')) params = params.split('&')[0]; const cleanStr = params.replace(/[^0-9]/g, ''); if (cleanStr.length < 16) return null; const numbersStr = cleanStr.substring(4); const games = []; const gameLabels = ['A', 'B', 'C', 'D', 'E']; for (let i = 0; i < numbersStr.length; i += 12) { const chunk = numbersStr.substring(i, i + 12); if (chunk.length < 12) break; const nums = []; for (let j = 0; j < 12; j += 2) nums.push(parseInt(chunk.substring(j, j + 2))); if (nums.some(n => n < 1 || n > 45)) continue; games.push({ label: gameLabels[games.length] || '?', numbers: nums.sort((a, b) => a - b) }); if (games.length >= 5) break; } return games; } catch (e) { return null; } }
         function toggleNotification(checkbox) { isNotificationEnabled = checkbox.checked; localStorage.setItem('lotto_noti_enabled', isNotificationEnabled); if (isNotificationEnabled) { requestNotificationPermission(); startNotificationScheduler(); showToast("토요일 밤 9시에 알림을 보내드릴게요! 🔔"); } else { showToast("알림이 해제되었습니다."); } }
         function requestNotificationPermission() { if (!("Notification" in window)) { showToast("이 브라우저는 알림을 지원하지 않습니다.", true); return; } if (Notification.permission !== "granted") { Notification.requestPermission().then(permission => { if (permission !== "granted") { notificationToggle.checked = false; isNotificationEnabled = false; localStorage.setItem('lotto_noti_enabled', false); showToast("알림 권한이 거부되었습니다.", true); } }); } }
@@ -1364,8 +1531,23 @@ Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
             }, 300);
         }
 
-        resultModal.addEventListener('click', (e) => { if (e.target === resultModal) closeModal(); });
-        init();
+        // [Callback for Firestore]
+        window.updateHistoryFromFirestore = (games) => {
+            historyData = games;
+            renderHistory(currentRound);
+        };
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            resultModal.addEventListener('click', (e) => { if (e.target === resultModal) closeModal(); });
+            // Add listener to roundInput
+            roundInput.addEventListener('change', (e) => {
+                let val = parseInt(e.target.value); currentRound = val; updateRoundInfo(val);
+                localStorage.setItem('lotto_current_round', currentRound); renderHistory(currentRound); closeGlobalResult();
+            });
+            init();
+        });
+
     </script>
 </body>
 </html>
