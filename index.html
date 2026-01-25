@@ -456,11 +456,9 @@
                         
                         // Stop listening to Firestore and fallback to localStorage
                         if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-                        // Re-load local history
-                        const storedHistory = localStorage.getItem('lotto_history');
-                        if (storedHistory) { 
-                            // Update global historyData and UI
-                             window.location.reload();
+                        // 로그아웃 시 로컬 데이터 복원 (무한 새로고침 방지)
+                        if (window.resetToLocalHistory) {
+                            window.resetToLocalHistory();
                         }
                     }
                 });
@@ -536,6 +534,16 @@
                  console.error("Error updating document: ", e);
              }
         }
+
+        window.resetToLocalHistory = () => {
+            const storedHistory = localStorage.getItem('lotto_history');
+            if (storedHistory) { 
+                try { historyData = JSON.parse(storedHistory); } catch(e) { historyData = []; }
+            } else {
+                historyData = [];
+            }
+            renderHistory(currentRound);
+        };
 
     </script>
 
