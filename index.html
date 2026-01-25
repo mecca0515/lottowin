@@ -37,7 +37,6 @@
             backdrop-filter: blur(5px);
         }
 
-        /* Splash Screen Animation */
         #splash-screen {
             transition: opacity 0.5s ease-out, visibility 0.5s;
         }
@@ -46,7 +45,6 @@
             visibility: hidden;
         }
 
-        /* Styles for balls */
         .lotto-ball {
             width: 3rem;
             height: 3rem;
@@ -241,7 +239,6 @@
                 </button>
             </div>
              -->
-            
             <div class="flex gap-2 mb-2 items-center">
                 <button id="scan-btn" onclick="handleScanClick()" class="relative flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-3 rounded-xl transition duration-200 transform active:scale-95 shadow-sm flex items-center justify-center gap-1.5 text-sm overflow-visible" title="이미지/QR 번호 추출">
                     <i class="fas fa-camera"></i> <span>스캔</span>
@@ -415,19 +412,15 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, onSnapshot, updateDoc, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBFaTXAYdoJYKCw3QEaxlWONgMuETnNG0U",
-            authDomain: "lottowin-d2817.firebaseapp.com",
-            projectId: "lottowin-d2817",
-            storageBucket: "lottowin-d2817.firebasestorage.app",
-            messagingSenderId: "757943357904",
-            appId: "1:757943357904:web:3ce18a90878ee6264329d5",
-            measurementId: "G-D43XDF3E4B"
+            // apiKey: "...",
         };
 
         let app, auth, db;
+        let unsubscribe = null; // Firestore listener unsubscriber
+
         try {
             if (firebaseConfig.apiKey) {
                 app = initializeApp(firebaseConfig);
@@ -440,15 +433,29 @@
                     const status = document.getElementById('login-status');
                     
                     if (user) {
-                        btn.innerHTML = `<i class="fas fa-sign-out-alt"></i> 로그아웃`;
-                        btn.onclick = handleLogout;
-                        status.textContent = `${user.displayName}님 환영합니다!`;
+                        if (btn) {
+                             btn.innerHTML = `<i class="fas fa-sign-out-alt"></i> 로그아웃`;
+                             btn.onclick = handleLogout;
+                        }
+                        if (status) status.textContent = `${user.displayName}님 환영합니다!`;
                         window.currentUser = user; 
+                        loadFirestoreData(user.uid); // Load data from Firestore
                     } else {
-                        btn.innerHTML = `<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5"> Google로 로그인`;
-                        btn.onclick = handleLogin;
-                        status.textContent = "로그인하면 데이터를 클라우드에 저장합니다.";
+                        if (btn) {
+                            btn.innerHTML = `<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5 h-5"> Google로 로그인`;
+                            btn.onclick = handleLogin;
+                        }
+                        if (status) status.textContent = "로그인하면 데이터를 클라우드에 저장합니다.";
                         window.currentUser = null;
+                        
+                        // Stop listening to Firestore and fallback to localStorage
+                        if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+                        // Re-load local history
+                        const storedHistory = localStorage.getItem('lotto_history');
+                        if (storedHistory) { 
+                            // Update global historyData and UI
+                             window.location.reload();
+                        }
                     }
                 });
             }
@@ -456,6 +463,22 @@
             console.log("Firebase Config Missing or Error", e);
         }
 
+        function loadFirestoreData(uid) {
+            if (!db) return;
+            const q = query(collection(db, 'users', uid, 'history'), orderBy('date', 'desc'));
+            unsubscribe = onSnapshot(q, (snapshot) => {
+                const games = [];
+                snapshot.forEach((doc) => {
+                    games.push({ id: doc.id, ...doc.data() });
+                });
+                // Expose to global scope to update UI
+                if (window.updateHistoryFromFirestore) {
+                    window.updateHistoryFromFirestore(games);
+                }
+            });
+        }
+
+        // Expose Firebase functions to global window object
         window.handleLogin = async () => {
             if (!auth) { alert("Firebase 설정이 필요합니다."); return; }
             const provider = new GoogleAuthProvider();
@@ -475,6 +498,39 @@
                 console.error(error);
             }
         };
+        
+        window.addGameToFirestore = async (game) => {
+            if (!auth || !auth.currentUser) return;
+            try {
+                const { id, ...gameData } = game; 
+                await addDoc(collection(db, 'users', auth.currentUser.uid, 'history'), gameData);
+            } catch (e) {
+                console.error("Error adding document: ", e);
+            }
+        }
+        
+        window.deleteGameFromFirestore = async (id) => {
+             if (!auth || !auth.currentUser) return;
+             try {
+                 await deleteDoc(doc(db, 'users', auth.currentUser.uid, 'history', id));
+             } catch (e) {
+                 console.error("Error removing document: ", e);
+             }
+        }
+
+        window.updateGameInFirestore = async (id, newNumbers) => {
+             if (!auth || !auth.currentUser) return;
+             try {
+                 const gameRef = doc(db, 'users', auth.currentUser.uid, 'history', id);
+                 await updateDoc(gameRef, {
+                     numbers: newNumbers,
+                     tag: "수동 (수정)"
+                 });
+             } catch (e) {
+                 console.error("Error updating document: ", e);
+             }
+        }
+
     </script>
 
     <script>
@@ -549,358 +605,81 @@
         const simLogEl = document.getElementById('sim-log');
         const simActionBtn = document.getElementById('sim-action-btn');
 
-        // --- Init ---
-        function init() {
-            const storedHistory = localStorage.getItem('lotto_history');
-            if (storedHistory) { historyData = JSON.parse(storedHistory); }
-            const storedWinResults = localStorage.getItem('lotto_win_results');
-            if (storedWinResults) { winResults = JSON.parse(storedWinResults); }
-
-            const latestRound = calculateCurrentRound();
-            populateRoundSelect(latestRound); 
-
-            const storedRound = localStorage.getItem('lotto_current_round');
-            if (storedRound) {
-                currentRound = parseInt(storedRound);
-                if(currentRound > latestRound) currentRound = latestRound;
-            } else {
-                currentRound = latestRound; 
-            }
-            roundInput.value = currentRound;
-            updateRoundInfo(currentRound);
-            renderHistory(currentRound);
-            
-            historyList.addEventListener('scroll', () => {
-                if (historyList.scrollTop + historyList.clientHeight >= historyList.scrollHeight - 50) {
-                    loadMoreHistory();
-                }
-            });
-
-            if (userApiKey) { userApiKeyInput.value = userApiKey; }
-            notificationToggle.checked = isNotificationEnabled;
-            if (isNotificationEnabled) { startNotificationScheduler(); }
-            updateScanButtonState();
-            
-            setTimeout(() => {
-                const splash = document.getElementById('splash-screen');
-                if(splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => splash.remove(), 500);
-                }
-            }, 1500);
+        // --- Utility Functions ---
+        function getBallColorClass(num) {
+            num = parseInt(num); if (num <= 10) return 'ball-yellow'; if (num <= 20) return 'ball-blue'; if (num <= 30) return 'ball-red'; if (num <= 40) return 'ball-gray'; return 'ball-green';
         }
 
-        // --- Core Functions ---
-        function calculateCurrentRound() {
-            const startDate = new Date('2002-12-07T00:00:00'); 
-            const today = new Date();
-            const diffTime = Math.abs(today - startDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-            return Math.floor((diffDays - 1) / 7) + 2;
-        }
-
-        function populateRoundSelect(maxRound) {
-            roundInput.innerHTML = '';
-            for (let i = maxRound; i >= 1; i--) {
-                const option = document.createElement('option');
-                option.value = i; option.textContent = i; option.className = "text-gray-800";
-                roundInput.appendChild(option);
-            }
-        }
-
-        function updateRoundInfo(round) {
-            historyRoundLabel.textContent = `${round}회`;
-            const startDate = new Date('2002-12-07T00:00:00');
-            const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
-            const year = drawDate.getFullYear(); const month = String(drawDate.getMonth() + 1).padStart(2, '0'); const day = String(drawDate.getDate()).padStart(2, '0');
-            drawDateSpan.textContent = `(${year}-${month}-${day})`;
-        }
-
-        roundInput.addEventListener('change', (e) => {
-            let val = parseInt(e.target.value); currentRound = val; updateRoundInfo(val);
-            localStorage.setItem('lotto_current_round', currentRound); renderHistory(currentRound); closeGlobalResult();
-        });
-
-        function addGameToData(numbers, tag) {
-            const game = { id: Date.now() + Math.random(), round: currentRound, numbers: numbers, tag: tag, date: new Date().toISOString() };
-            historyData.unshift(game); saveHistory(); renderHistory(currentRound);
-        }
-
-        function deleteGameFromData(id) {
-            historyData = historyData.filter(game => game.id !== id); saveHistory(); renderHistory(currentRound);
-        }
-        
-        function updateGameData(id, newNumbers) {
-            const index = historyData.findIndex(game => game.id === id);
-            if (index !== -1) {
-                historyData[index].numbers = newNumbers;
-                if (!historyData[index].tag.includes('(수정)')) {
-                    historyData[index].tag = "수동 (수정)";
-                }
-                saveHistory();
-                renderHistory(currentRound);
-            }
-        }
-
-        function clearCurrentRoundHistory() {
-            historyData = historyData.filter(game => game.round !== currentRound); saveHistory(); renderHistory(currentRound);
-        }
-
-        function saveHistory() {
-            localStorage.setItem('lotto_history', JSON.stringify(historyData));
-        }
-
-        // --- Core: Pattern Generation Logic ---
-        function generatePatternLotto() {
-            closeGlobalResult();
-            
-            if(patternGenBtn) {
-                patternGenBtn.disabled = true;
-                patternGenBtn.classList.add('opacity-70', 'cursor-wait');
-            }
-
-            setTimeout(() => {
-                const patternData = applyRandomPattern();
-                currentNumbers = patternData.numbers;
-                displayNumbers(currentNumbers);
-                addGameToData(currentNumbers, patternData.name);
-                showToast(`패턴 적용: ${patternData.name}`);
-                
-                if(patternGenBtn) {
-                    patternGenBtn.disabled = false;
-                    patternGenBtn.classList.remove('opacity-70', 'cursor-wait');
-                }
-            }, 300);
-        }
-
-        function applyRandomPattern() {
-            const patterns = [
-                { name: "⚡ 20번대 집중", weight: 1, func: () => generateDecadeFocus(21, 30, 3) },
-                { name: "⚡ 10&30번대 믹스", weight: 1, func: () => generateMixedDecades(11, 20, 2, 31, 40, 2) },
-                { name: "⚡ 40번대 연번", weight: 1, func: () => generateConsecutiveInRange(41, 45) },
-                { name: "⚡ 연번 포함", weight: 1, func: () => generateConsecutiveAny() },
-                { name: "⚡ 끝수 일치", weight: 1, func: () => generateEndingMatch() },
-                { name: "🎲 랜덤 생성", weight: 2, func: () => generateRandomFixed(6) },
-                { name: "⚡ 10번대 집중", weight: 1, func: () => generateDecadeFocus(11, 20, 3) },
-                { name: "⚡ 30번대 집중", weight: 1, func: () => generateDecadeFocus(31, 40, 3) },
-                { name: "⚡ 20~30번대 집중", weight: 1, func: () => generateDecadeFocus(21, 40, 4) },
-                { name: "⚖️ 저고(Low/High) 균형", weight: 1, func: () => generateLowHighMix() },
-                { name: "🌈 골고루 분포", weight: 1, func: () => generateBalanced() }
-            ];
-            
-            const strategy = patterns[Math.floor(Math.random() * patterns.length)];
-            let nums = strategy.func();
-            
-            if (!nums || nums.length !== 6 || new Set(nums).size !== 6) {
-                return { numbers: generateRandomFixed(6), name: "🎲 랜덤 생성 (Fallback)" };
-            }
-            return { numbers: nums.sort((a,b)=>a-b), name: strategy.name };
-        }
-
-        function generateRandomFixed(count, exclude = []) {
-            const nums = new Set();
-            while(nums.size < count) {
-                let n = Math.floor(Math.random() * 45) + 1;
-                if (!exclude.includes(n)) nums.add(n);
-            }
-            return Array.from(nums);
-        }
-
-        function generateDecadeFocus(start, end, count) {
-            const focusNums = new Set();
-            while(focusNums.size < count) {
-                let n = Math.floor(Math.random() * (end - start + 1)) + start;
-                focusNums.add(n);
-            }
-            const remainder = generateRandomFixed(6 - count, Array.from(focusNums));
-            return [...focusNums, ...remainder];
-        }
-
-        function generateMixedDecades(s1, e1, c1, s2, e2, c2) {
-            const set1 = new Set();
-            while(set1.size < c1) set1.add(Math.floor(Math.random() * (e1 - s1 + 1)) + s1);
-            const set2 = new Set();
-            while(set2.size < c2) set2.add(Math.floor(Math.random() * (e2 - s2 + 1)) + s2);
-            
-            const used = [...set1, ...set2];
-            const remainder = generateRandomFixed(6 - c1 - c2, used);
-            return [...used, ...remainder];
-        }
-
-        function generateConsecutiveInRange(start, end) {
-            let n = Math.floor(Math.random() * (end - start)) + start; 
-            const seed = [n, n+1];
-            const remainder = generateRandomFixed(4, seed);
-            return [...seed, ...remainder];
-        }
-
-        function generateConsecutiveAny() {
-            let n = Math.floor(Math.random() * 44) + 1; 
-            const seed = [n, n+1];
-            const remainder = generateRandomFixed(4, seed);
-            return [...seed, ...remainder];
-        }
-
-        function generateEndingMatch() {
-            const digit = Math.floor(Math.random() * 10);
-            const candidates = [digit, digit+10, digit+20, digit+30, digit+40].filter(n => n >= 1 && n <= 45);
-            if (candidates.length < 2) return generateRandomFixed(6); 
-            
-            const shuffled = candidates.sort(() => 0.5 - Math.random());
-            const seed = shuffled.slice(0, 2);
-            const remainder = generateRandomFixed(4, seed);
-            return [...seed, ...remainder];
-        }
-        
-        function generateLowHighMix() {
-            const lowSet = new Set();
-            while(lowSet.size < 3) lowSet.add(Math.floor(Math.random() * 23) + 1);
-            const highSet = new Set();
-            while(highSet.size < 3) highSet.add(Math.floor(Math.random() * (45 - 24 + 1)) + 24);
-            return [...lowSet, ...highSet];
-        }
-
-        function generateBalanced() {
-            const ranges = [
-                {s: 1, e: 10}, {s: 11, e: 20}, {s: 21, e: 30}, {s: 31, e: 40}, {s: 41, e: 45}
-            ];
-            const nums = new Set();
-            ranges.forEach(r => {
-                const n = Math.floor(Math.random() * (r.e - r.s + 1)) + r.s;
-                nums.add(n);
-            });
-            while(nums.size < 6) {
-                nums.add(Math.floor(Math.random() * 45) + 1);
-            }
-            return Array.from(nums);
-        }
-
-        // --- AI Logic ---
-        async function generateLottoAI() {
-            closeGlobalResult();
-            const keyToUse = userApiKey || apiKey;
-            
-            if(aiGenBtn) {
-                aiGenBtn.disabled = true;
-                aiGenBtn.classList.add('opacity-70', 'cursor-wait');
-            }
-
-            if (!keyToUse) {
-                setTimeout(() => {
-                    const patternData = applyRandomPattern();
-                    currentNumbers = patternData.numbers;
-                    displayNumbers(currentNumbers);
-                    addGameToData(currentNumbers, "AI 추천 (대체)");
-                    showToast("AI가 영감을 받는 중 잠들었네요 😴 대신 행운의 패턴 번호를 드려요!");
-                    
-                    if(aiGenBtn) {
-                        aiGenBtn.disabled = false;
-                        aiGenBtn.classList.remove('opacity-70', 'cursor-wait');
-                    }
-                }, 500);
-                return;
-            }
-
-            aiLoader.style.display = 'flex';
+        function displayNumbers(numbers) {
             generatedBallsArea.innerHTML = '';
-            
-            try {
-                const seed = Date.now();
-                const prompt = `Generate 6 unique lotto numbers (1-45).
-Analyze recent trends using a statistical approach (e.g., standard deviation, hot/cold numbers, even/odd ratio).
-Provide a creative, luck-based reason for this combination in Korean.
-IMPORTANT: Return ONLY a raw JSON object. No Markdown, no code blocks, no intro/outro text.
-Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
-                
-                const responseText = await callGeminiTextAPI(prompt);
-                
-                let result;
-                try {
-                    let cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-                    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        cleanText = jsonMatch[0];
-                    }
-                    result = JSON.parse(cleanText);
-                } catch (e) {
-                    throw new Error("AI 응답 해석 실패");
-                }
-
-                if (!result.numbers || result.numbers.length !== 6) throw new Error("번호 생성 오류");
-
-                currentNumbers = result.numbers.sort((a, b) => a - b);
-                displayNumbers(currentNumbers);
-                addGameToData(currentNumbers, "AI 추천");
-                if (result.reason) showToast("✨ AI: " + result.reason);
-
-            } catch (err) {
-                console.error(err);
-                const patternData = applyRandomPattern();
-                currentNumbers = patternData.numbers;
-                displayNumbers(currentNumbers);
-                addGameToData(currentNumbers, "AI 추천 (대체)");
-                showToast("AI 연결이 원활하지 않아 패턴 번호를 추천해드려요!");
-            } finally {
-                aiLoader.style.display = 'none';
-                if(aiGenBtn) {
-                    aiGenBtn.disabled = false;
-                    aiGenBtn.classList.remove('opacity-70', 'cursor-wait');
-                }
-            }
+            numbers.forEach((num, index) => { const ball = document.createElement('div'); ball.className = `lotto-ball ${getBallColorClass(num)}`; ball.textContent = num; ball.style.animationDelay = `${index * 0.1}s`; generatedBallsArea.appendChild(ball); });
         }
 
-        async function callGeminiTextAPI(prompt) {
-             const keyToUse = userApiKey || apiKey;
-             if (!keyToUse) throw new Error("Missing API Key");
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`;
-            
-            const payload = {
-                contents: [{
-                    parts: [{ text: prompt }]
-                }],
-                generationConfig: {
-                    temperature: 0.9,
-                    topK: 40,
-                    topP: 0.95
-                }
-            };
-
-            const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`);
-            const data = await response.json();
-            return data.candidates[0].content.parts[0].text;
+        function showGlobalResult(title, desc, colorClass) {
+            globalRankTitle.textContent = title; globalRankTitle.className = `text-2xl font-bold mb-1 mt-2 ${colorClass}`; globalRankDesc.innerHTML = desc; 
+            globalResultOverlay.classList.remove('hidden'); globalResultOverlay.style.opacity = '0'; setTimeout(() => { globalResultOverlay.style.transition = 'opacity 0.3s'; globalResultOverlay.style.opacity = '1'; }, 10);
         }
 
-        // --- Standard UI Functions ---
-        function renderHistory(round) {
-            historyList.innerHTML = ''; 
-            displayedCount = 0;
-            currentWinData = winResults[round] || null; 
-            currentFilteredGames = historyData.filter(game => game.round === round);
-            totalCountBadge.textContent = `(총 ${currentFilteredGames.length}건)`;
+        function closeGlobalResult() { globalResultOverlay.classList.add('hidden'); }
 
-            if (currentFilteredGames.length === 0) {
-                historyList.innerHTML = `<div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400 py-10"><i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i><span class="text-xs">${round}회차 기록이 없습니다.</span></div>`;
-                return;
-            }
-            loadMoreHistory();
-            if (currentWinData) { calculateAndShowSummary(currentWinData); }
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast'); document.getElementById('toast-msg').textContent = message;
+            const icon = toast.querySelector('i'); if (isError) { toast.classList.remove('bg-gray-800'); toast.classList.add('bg-red-600'); icon.className = "fas fa-exclamation-circle"; } else { toast.classList.remove('bg-red-600'); toast.classList.add('bg-gray-800'); icon.className = "fas fa-check-circle"; }
+            if (toastTimeoutId) { clearTimeout(toastTimeoutId); }
+            toast.style.opacity = '1';
+            toastTimeoutId = setTimeout(() => { toast.style.opacity = '0'; toastTimeoutId = null; }, 2500);
         }
 
-        function loadMoreHistory() {
-            const nextBatch = currentFilteredGames.slice(displayedCount, displayedCount + PAGE_SIZE);
-            if(nextBatch.length === 0) return;
-            const fragment = document.createDocumentFragment();
-            nextBatch.forEach(game => {
-                const item = createHistoryItemElement(game);
-                if(currentWinData) {
-                    const winArr = [currentWinData.drwtNo1, currentWinData.drwtNo2, currentWinData.drwtNo3, currentWinData.drwtNo4, currentWinData.drwtNo5, currentWinData.drwtNo6];
-                    applyWinStyleToItem(item, winArr, currentWinData.bnusNo, game.numbers);
-                }
-                fragment.appendChild(item);
+        function createHistoryItemElement(game) {
+            const item = document.createElement('div');
+            item.dataset.numbers = JSON.stringify(game.numbers); item.dataset.id = game.id;
+            item.className = 'history-item bg-white bg-opacity-80 p-2 rounded-lg border border-gray-100 flex flex-col shadow-sm items-start';
+            const contentRow = document.createElement('div'); contentRow.className = 'flex justify-between w-full items-center';
+            const leftDiv = document.createElement('div'); leftDiv.className = 'flex flex-col';
+            const ballsContainer = document.createElement('div'); ballsContainer.className = 'flex ball-container items-center gap-1';
+            game.numbers.forEach(num => {
+                const smallBall = document.createElement('div'); smallBall.className = `lotto-ball small-ball ${getBallColorClass(num)}`; smallBall.textContent = num; smallBall.dataset.num = num; ballsContainer.appendChild(smallBall);
             });
-            historyList.appendChild(fragment);
-            displayedCount += nextBatch.length;
+            leftDiv.appendChild(ballsContainer);
+            
+            if (game.tag) {
+                const metaDiv = document.createElement('div'); metaDiv.className = 'flex items-center mt-1 ml-1 meta-info';
+                const tagSpan = document.createElement('span');
+                let colorClass = 'text-gray-400', icon = '';
+                if (game.tag.includes('스캔') || game.tag.includes('분석')) { colorClass = 'text-teal-600'; icon = '⚡ '; }
+                else if (game.tag.includes('수동')) { colorClass = 'text-orange-500'; icon = '👆 '; }
+                else if (game.tag.includes('AI')) { colorClass = 'text-purple-600'; icon = '✨ '; }
+                else if (game.tag.includes('랜덤') || game.tag.includes('패턴')) { colorClass = 'text-blue-500'; icon = '⚡ '; }
+                tagSpan.className = `text-[10px] font-bold ${colorClass}`; tagSpan.textContent = icon + game.tag;
+                metaDiv.appendChild(tagSpan);
+                const rankSpan = document.createElement('span'); rankSpan.className = 'rank-badge text-[10px] font-bold ml-2 hidden'; 
+                metaDiv.appendChild(rankSpan); leftDiv.appendChild(metaDiv);
+            }
+            const rightDiv = document.createElement('div'); rightDiv.className = 'flex flex-col items-end gap-1';
+            const dateObj = new Date(game.date); const timeStr = dateObj.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            const timeSpan = document.createElement('span'); timeSpan.className = 'text-xs text-gray-400 whitespace-nowrap'; timeSpan.textContent = timeStr;
+            rightDiv.appendChild(timeSpan);
+            
+            const btnGroup = document.createElement('div');
+            btnGroup.className = 'item-actions flex gap-1';
+            
+            const editBtn = document.createElement('button');
+            editBtn.className = 'action-btn text-gray-400 hover:text-blue-500 mr-2'; 
+            editBtn.innerHTML = '<i class="fas fa-pencil-alt text-xs"></i>';
+            editBtn.onclick = function() { openEditModal(game.id); }; 
+            
+            const delBtn = document.createElement('button'); 
+            delBtn.className = 'action-btn text-gray-400 hover:text-red-500';
+            delBtn.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>'; 
+            delBtn.onclick = function() { openDeleteConfirmModal('SINGLE', game.id); };
+            
+            btnGroup.appendChild(editBtn); 
+            btnGroup.appendChild(delBtn); 
+            
+            rightDiv.appendChild(btnGroup); 
+            
+            contentRow.appendChild(leftDiv); contentRow.appendChild(rightDiv); item.appendChild(contentRow);
+            return item;
         }
 
         function applyWinStyleToItem(item, winArr, bonus, myNumbers) {
@@ -960,74 +739,429 @@ Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
             } showGlobalResult(title, desc, colorClass);
         }
 
-        function createHistoryItemElement(game) {
-            const item = document.createElement('div');
-            item.dataset.numbers = JSON.stringify(game.numbers); item.dataset.id = game.id;
-            item.className = 'history-item bg-white bg-opacity-80 p-2 rounded-lg border border-gray-100 flex flex-col shadow-sm items-start';
-            const contentRow = document.createElement('div'); contentRow.className = 'flex justify-between w-full items-center';
-            const leftDiv = document.createElement('div'); leftDiv.className = 'flex flex-col';
-            const ballsContainer = document.createElement('div'); ballsContainer.className = 'flex ball-container items-center gap-1';
-            game.numbers.forEach(num => {
-                const smallBall = document.createElement('div'); smallBall.className = `lotto-ball small-ball ${getBallColorClass(num)}`; smallBall.textContent = num; smallBall.dataset.num = num; ballsContainer.appendChild(smallBall);
-            });
-            leftDiv.appendChild(ballsContainer);
-            
-            if (game.tag) {
-                const metaDiv = document.createElement('div'); metaDiv.className = 'flex items-center mt-1 ml-1 meta-info';
-                const tagSpan = document.createElement('span');
-                let colorClass = 'text-gray-400', icon = '';
-                if (game.tag.includes('스캔') || game.tag.includes('분석')) { colorClass = 'text-teal-600'; icon = '⚡ '; }
-                else if (game.tag.includes('수동')) { colorClass = 'text-orange-500'; icon = '👆 '; }
-                else if (game.tag.includes('AI')) { colorClass = 'text-purple-600'; icon = '✨ '; }
-                else if (game.tag.includes('랜덤') || game.tag.includes('패턴')) { colorClass = 'text-blue-500'; icon = '⚡ '; }
-                tagSpan.className = `text-[10px] font-bold ${colorClass}`; tagSpan.textContent = icon + game.tag;
-                metaDiv.appendChild(tagSpan);
-                const rankSpan = document.createElement('span'); rankSpan.className = 'rank-badge text-[10px] font-bold ml-2 hidden'; 
-                metaDiv.appendChild(rankSpan); leftDiv.appendChild(metaDiv);
+        // --- Init ---
+        function init() {
+            const storedHistory = localStorage.getItem('lotto_history');
+            if (storedHistory) { historyData = JSON.parse(storedHistory); }
+            const storedWinResults = localStorage.getItem('lotto_win_results');
+            if (storedWinResults) { winResults = JSON.parse(storedWinResults); }
+
+            const latestRound = calculateCurrentRound();
+            populateRoundSelect(latestRound); 
+
+            const storedRound = localStorage.getItem('lotto_current_round');
+            if (storedRound) {
+                currentRound = parseInt(storedRound);
+                if(currentRound > latestRound) currentRound = latestRound;
+            } else {
+                currentRound = latestRound; 
             }
-            const rightDiv = document.createElement('div'); rightDiv.className = 'flex flex-col items-end gap-1';
-            const dateObj = new Date(game.date); const timeStr = dateObj.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-            const timeSpan = document.createElement('span'); timeSpan.className = 'text-xs text-gray-400 whitespace-nowrap'; timeSpan.textContent = timeStr;
-            rightDiv.appendChild(timeSpan);
+            roundInput.value = currentRound;
+            updateRoundInfo(currentRound);
+            renderHistory(currentRound);
             
-            const btnGroup = document.createElement('div');
-            btnGroup.className = 'item-actions flex gap-1';
+            historyList.addEventListener('scroll', () => {
+                if (historyList.scrollTop + historyList.clientHeight >= historyList.scrollHeight - 50) {
+                    loadMoreHistory();
+                }
+            });
+
+            if (userApiKey) { userApiKeyInput.value = userApiKey; }
+            notificationToggle.checked = isNotificationEnabled;
+            if (isNotificationEnabled) { startNotificationScheduler(); }
+            updateScanButtonState();
             
-            // [추가] 수정 버튼
-            const editBtn = document.createElement('button');
-            editBtn.className = 'action-btn text-gray-400 hover:text-blue-500 mr-2'; // mr-2 추가하여 간격 확보
-            editBtn.innerHTML = '<i class="fas fa-pencil-alt text-xs"></i>';
-            editBtn.onclick = function() { openEditModal(game.id); }; 
-            
-            const delBtn = document.createElement('button'); 
-            delBtn.className = 'action-btn text-gray-400 hover:text-red-500';
-            delBtn.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>'; 
-            delBtn.onclick = function() { openDeleteConfirmModal('SINGLE', game.id); };
-            
-            btnGroup.appendChild(editBtn); 
-            btnGroup.appendChild(delBtn); 
-            
-            rightDiv.appendChild(btnGroup); 
-            
-            contentRow.appendChild(leftDiv); contentRow.appendChild(rightDiv); item.appendChild(contentRow);
-            return item;
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                if(splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => splash.remove(), 500);
+                }
+            }, 1500);
+        }
+        
+        // [Callback for Firestore]
+        window.updateHistoryFromFirestore = (games) => {
+            historyData = games;
+            renderHistory(currentRound);
+        };
+
+        // --- Core Functions ---
+        function calculateCurrentRound() {
+            const startDate = new Date('2002-12-07T00:00:00'); 
+            const today = new Date();
+            const diffTime = Math.abs(today - startDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            return Math.floor((diffDays - 1) / 7) + 2;
         }
 
-        // [Utility Functions]
-        function getBallColorClass(num) {
-            num = parseInt(num); if (num <= 10) return 'ball-yellow'; if (num <= 20) return 'ball-blue'; if (num <= 30) return 'ball-red'; if (num <= 40) return 'ball-gray'; return 'ball-green';
+        function populateRoundSelect(maxRound) {
+            roundInput.innerHTML = '';
+            for (let i = maxRound; i >= 1; i--) {
+                const option = document.createElement('option');
+                option.value = i; option.textContent = i; option.className = "text-gray-800";
+                roundInput.appendChild(option);
+            }
         }
-        function displayNumbers(numbers) {
-            generatedBallsArea.innerHTML = '';
-            numbers.forEach((num, index) => { const ball = document.createElement('div'); ball.className = `lotto-ball ${getBallColorClass(num)}`; ball.textContent = num; ball.style.animationDelay = `${index * 0.1}s`; generatedBallsArea.appendChild(ball); });
+
+        function updateRoundInfo(round) {
+            historyRoundLabel.textContent = `${round}회`;
+            const startDate = new Date('2002-12-07T00:00:00');
+            const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
+            const year = drawDate.getFullYear(); const month = String(drawDate.getMonth() + 1).padStart(2, '0'); const day = String(drawDate.getDate()).padStart(2, '0');
+            drawDateSpan.textContent = `(${year}-${month}-${day})`;
         }
-        function showGlobalResult(title, desc, colorClass) {
-            globalRankTitle.textContent = title; globalRankTitle.className = `text-2xl font-bold mb-1 mt-2 ${colorClass}`; globalRankDesc.innerHTML = desc; 
-            globalResultOverlay.classList.remove('hidden'); globalResultOverlay.style.opacity = '0'; setTimeout(() => { globalResultOverlay.style.transition = 'opacity 0.3s'; globalResultOverlay.style.opacity = '1'; }, 10);
+
+        roundInput.addEventListener('change', (e) => {
+            let val = parseInt(e.target.value); currentRound = val; updateRoundInfo(val);
+            localStorage.setItem('lotto_current_round', currentRound); renderHistory(currentRound); closeGlobalResult();
+        });
+
+        function addGameToData(numbers, tag) {
+            if (window.currentUser && window.addGameToFirestore) {
+                const game = { round: currentRound, numbers: numbers, tag: tag, date: new Date().toISOString() };
+                window.addGameToFirestore(game);
+            } else {
+                const game = { id: Date.now() + Math.random(), round: currentRound, numbers: numbers, tag: tag, date: new Date().toISOString() };
+                historyData.unshift(game); saveHistory(); renderHistory(currentRound);
+            }
         }
-        function closeGlobalResult() { globalResultOverlay.classList.add('hidden'); }
+
+        function deleteGameFromData(id) {
+            if (window.currentUser && window.deleteGameFromFirestore) {
+                window.deleteGameFromFirestore(id);
+            } else {
+                historyData = historyData.filter(game => game.id !== id); saveHistory(); renderHistory(currentRound);
+            }
+        }
         
-        // ... (Modal/Toast/Settings/Scan UI functions remain same as before, ensuring robust handling) ...
+        function updateGameData(id, newNumbers) {
+            if (window.currentUser && window.updateGameInFirestore) {
+                window.updateGameInFirestore(id, newNumbers);
+            } else {
+                const index = historyData.findIndex(game => game.id === id);
+                if (index !== -1) {
+                    historyData[index].numbers = newNumbers;
+                    if (!historyData[index].tag.includes('(수정)')) {
+                        historyData[index].tag = "수동 (수정)";
+                    }
+                    saveHistory();
+                    renderHistory(currentRound);
+                }
+            }
+        }
+
+        function clearCurrentRoundHistory() {
+             if (window.currentUser) {
+                 showToast("로그인 상태에서는 전체 삭제가 지원되지 않습니다.");
+             } else {
+                historyData = historyData.filter(game => game.round !== currentRound); saveHistory(); renderHistory(currentRound);
+             }
+        }
+
+        function saveHistory() {
+            localStorage.setItem('lotto_history', JSON.stringify(historyData));
+        }
+
+        function generatePatternLotto() {
+            closeGlobalResult();
+            if(patternGenBtn) { patternGenBtn.disabled = true; patternGenBtn.classList.add('opacity-70', 'cursor-wait'); }
+            setTimeout(() => {
+                const patternData = applyRandomPattern();
+                currentNumbers = patternData.numbers;
+                displayNumbers(currentNumbers);
+                addGameToData(currentNumbers, patternData.name);
+                showToast(`패턴 적용: ${patternData.name}`);
+                if(patternGenBtn) { patternGenBtn.disabled = false; patternGenBtn.classList.remove('opacity-70', 'cursor-wait'); }
+            }, 300);
+        }
+
+        function applyRandomPattern() {
+            const patterns = [
+                { name: "⚡ 20번대 집중", weight: 1, func: () => generateDecadeFocus(21, 30, 3) },
+                { name: "⚡ 10&30번대 믹스", weight: 1, func: () => generateMixedDecades(11, 20, 2, 31, 40, 2) },
+                { name: "⚡ 40번대 연번", weight: 1, func: () => generateConsecutiveInRange(41, 45) },
+                { name: "⚡ 연번 포함", weight: 1, func: () => generateConsecutiveAny() },
+                { name: "⚡ 끝수 일치", weight: 1, func: () => generateEndingMatch() },
+                { name: "🎲 랜덤 생성", weight: 2, func: () => generateRandomFixed(6) },
+                { name: "⚡ 10번대 집중", weight: 1, func: () => generateDecadeFocus(11, 20, 3) },
+                { name: "⚡ 30번대 집중", weight: 1, func: () => generateDecadeFocus(31, 40, 3) },
+                { name: "⚡ 20~30번대 집중", weight: 1, func: () => generateDecadeFocus(21, 40, 4) },
+                { name: "⚖️ 저고(Low/High) 균형", weight: 1, func: () => generateLowHighMix() },
+                { name: "🌈 골고루 분포", weight: 1, func: () => generateBalanced() }
+            ];
+            const strategy = patterns[Math.floor(Math.random() * patterns.length)];
+            let nums = strategy.func();
+            if (!nums || nums.length !== 6 || new Set(nums).size !== 6) { return { numbers: generateRandomFixed(6), name: "🎲 랜덤 생성 (Fallback)" }; }
+            return { numbers: nums.sort((a,b)=>a-b), name: strategy.name };
+        }
+
+        function generateRandomFixed(count, exclude = []) { const nums = new Set(); while(nums.size < count) { let n = Math.floor(Math.random() * 45) + 1; if (!exclude.includes(n)) nums.add(n); } return Array.from(nums); }
+        function generateDecadeFocus(start, end, count) { const focusNums = new Set(); while(focusNums.size < count) { let n = Math.floor(Math.random() * (end - start + 1)) + start; focusNums.add(n); } const remainder = generateRandomFixed(6 - count, Array.from(focusNums)); return [...focusNums, ...remainder]; }
+        function generateMixedDecades(s1, e1, c1, s2, e2, c2) { const set1 = new Set(); while(set1.size < c1) set1.add(Math.floor(Math.random() * (e1 - s1 + 1)) + s1); const set2 = new Set(); while(set2.size < c2) set2.add(Math.floor(Math.random() * (e2 - s2 + 1)) + s2); const used = [...set1, ...set2]; const remainder = generateRandomFixed(6 - c1 - c2, used); return [...used, ...remainder]; }
+        function generateConsecutiveInRange(start, end) { let n = Math.floor(Math.random() * (end - start)) + start; const seed = [n, n+1]; const remainder = generateRandomFixed(4, seed); return [...seed, ...remainder]; }
+        function generateConsecutiveAny() { let n = Math.floor(Math.random() * 44) + 1; const seed = [n, n+1]; const remainder = generateRandomFixed(4, seed); return [...seed, ...remainder]; }
+        function generateEndingMatch() { const digit = Math.floor(Math.random() * 10); const candidates = [digit, digit+10, digit+20, digit+30, digit+40].filter(n => n >= 1 && n <= 45); if (candidates.length < 2) return generateRandomFixed(6); const shuffled = candidates.sort(() => 0.5 - Math.random()); const seed = shuffled.slice(0, 2); const remainder = generateRandomFixed(4, seed); return [...seed, ...remainder]; }
+        function generateLowHighMix() { const lowSet = new Set(); while(lowSet.size < 3) lowSet.add(Math.floor(Math.random() * 23) + 1); const highSet = new Set(); while(highSet.size < 3) highSet.add(Math.floor(Math.random() * (45 - 24 + 1)) + 24); return [...lowSet, ...highSet]; }
+        function generateBalanced() { const ranges = [ {s: 1, e: 10}, {s: 11, e: 20}, {s: 21, e: 30}, {s: 31, e: 40}, {s: 41, e: 45} ]; const nums = new Set(); ranges.forEach(r => { const n = Math.floor(Math.random() * (r.e - r.s + 1)) + r.s; nums.add(n); }); while(nums.size < 6) { nums.add(Math.floor(Math.random() * 45) + 1); } return Array.from(nums); }
+
+        async function generateLottoAI() {
+            closeGlobalResult();
+            const keyToUse = userApiKey || apiKey;
+            if(aiGenBtn) { aiGenBtn.disabled = true; aiGenBtn.classList.add('opacity-70', 'cursor-wait'); }
+            if (!keyToUse) {
+                setTimeout(() => {
+                    const patternData = applyRandomPattern();
+                    currentNumbers = patternData.numbers;
+                    displayNumbers(currentNumbers);
+                    addGameToData(currentNumbers, "AI 추천 (대체)");
+                    showToast("AI가 영감을 받는 중 잠들었네요 😴 대신 행운의 패턴 번호를 드려요!");
+                    if(aiGenBtn) { aiGenBtn.disabled = false; aiGenBtn.classList.remove('opacity-70', 'cursor-wait'); }
+                }, 500);
+                return;
+            }
+            aiLoader.style.display = 'flex'; generatedBallsArea.innerHTML = '';
+            try {
+                const seed = Date.now();
+                const prompt = `Act as a complex lottery number generator algorithm...`; 
+                const responseText = await callGeminiTextAPI(prompt);
+                let result;
+                try { const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim(); result = JSON.parse(cleanText); } catch (e) { throw new Error("AI 응답 해석 실패"); }
+                if (!result.numbers || result.numbers.length !== 6) throw new Error("번호 생성 오류");
+                currentNumbers = result.numbers.sort((a, b) => a - b); displayNumbers(currentNumbers); addGameToData(currentNumbers, "AI 추천");
+                if (result.reason) showToast("✨ AI: " + result.reason);
+            } catch (err) {
+                console.error(err); const patternData = applyRandomPattern(); currentNumbers = patternData.numbers; displayNumbers(currentNumbers); addGameToData(currentNumbers, "AI 추천 (대체)"); showToast("AI 연결이 원활하지 않아 패턴 번호를 추천해드려요!");
+            } finally {
+                aiLoader.style.display = 'none'; if(aiGenBtn) { aiGenBtn.disabled = false; aiGenBtn.classList.remove('opacity-70', 'cursor-wait'); }
+            }
+        }
+        async function callGeminiTextAPI(prompt) { const keyToUse = userApiKey || apiKey; if (!keyToUse) throw new Error("Missing API Key"); const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`; const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.9, topK: 40, topP: 0.95 } }; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) throw new Error(`Gemini API Error: ${response.status}`); const data = await response.json(); return data.candidates[0].content.parts[0].text; }
+
+        function openSimulationModal() {
+            simulationModal.classList.remove('hidden');
+            setTimeout(() => { simulationModal.classList.add('opacity-100'); simulationModal.querySelector('div').classList.remove('scale-95'); simulationModal.querySelector('div').classList.add('scale-100'); }, 10);
+            simTargetRound.textContent = `${currentRound}회차`;
+            if (winResults[currentRound]) {
+                const w = winResults[currentRound];
+                simWinNums.textContent = `당첨: ${w.drwtNo1},${w.drwtNo2},${w.drwtNo3},${w.drwtNo4},${w.drwtNo5},${w.drwtNo6} + ${w.bnusNo}`;
+                simState.targetNumbers = [w.drwtNo1, w.drwtNo2, w.drwtNo3, w.drwtNo4, w.drwtNo5, w.drwtNo6];
+                simState.targetBonus = w.bnusNo;
+                simActionBtn.disabled = false; simActionBtn.classList.remove('bg-gray-400'); simActionBtn.classList.add('bg-indigo-600'); simActionBtn.textContent = '시작하기';
+            } else {
+                simWinNums.textContent = "최신 회차 결과가 없습니다. '결과 확인'을 먼저 해주세요.";
+                simActionBtn.disabled = true; simActionBtn.classList.remove('bg-indigo-600'); simActionBtn.classList.add('bg-gray-400'); simActionBtn.textContent = '결과 데이터 필요';
+            }
+        }
+        function closeSimulationModal() { if (simState.isRunning) toggleSimulation(); simulationModal.classList.remove('opacity-100'); simulationModal.querySelector('div').classList.remove('scale-100'); simulationModal.querySelector('div').classList.add('scale-95'); setTimeout(() => { simulationModal.classList.add('hidden'); }, 300); }
+        function toggleSimulation() {
+            if (simState.isRunning) {
+                simState.isRunning = false;
+                simActionBtn.textContent = "다시 시작하기"; simActionBtn.classList.remove('bg-red-500', 'hover:bg-red-600'); simActionBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            } else {
+                if (!simState.targetNumbers.length) { showToast("당첨 번호 정보가 없습니다."); return; }
+                simState.isRunning = true;
+                simActionBtn.textContent = "중지"; simActionBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700'); simActionBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+                runSimulationLoop();
+            }
+        }
+        function runSimulationLoop() {
+            if (!simState.isRunning) return;
+            const BATCH_SIZE = 100; 
+            for (let i = 0; i < BATCH_SIZE; i++) {
+                simState.count++;
+                const myNums = generateRandomFixed(6).sort((a,b)=>a-b);
+                let matchCount = 0; let bonusMatch = false;
+                myNums.forEach(n => { if (simState.targetNumbers.includes(n)) matchCount++; else if (n === simState.targetBonus) bonusMatch = true; });
+                let rank = 7; if (matchCount === 6) rank = 1; else if (matchCount === 5 && bonusMatch) rank = 2; else if (matchCount === 5) rank = 3; else if (matchCount === 4) rank = 4; else if (matchCount === 3) rank = 5;
+                if (rank < simState.bestRank) {
+                    simState.bestRank = rank; updateSimUI(rank); 
+                    if (rank === 1) { simState.isRunning = false; simActionBtn.textContent = "1등 당첨! (종료)"; alert(`축하합니다! ${simState.count.toLocaleString()}번 만에 1등에 당첨되셨습니다!\n총 비용: ${(simState.count * 1000).toLocaleString()}원`); return; }
+                }
+            }
+            updateSimUI();
+            requestAnimationFrame(runSimulationLoop);
+        }
+        function updateSimUI(newBestRank = null) {
+            simCountEl.textContent = `${simState.count.toLocaleString()}회`; simCostEl.textContent = `${(simState.count * 1000).toLocaleString()}원`;
+            if (simState.bestRank < 7) { simBestRankEl.textContent = `${simState.bestRank}등`; simBestRankEl.className = "font-bold text-red-600"; }
+            if (newBestRank) { const log = document.createElement('div'); log.textContent = `${simState.count}회차: ${newBestRank}등 당첨!`; simLogEl.prepend(log); }
+        }
+
+        function renderHistory(round) {
+            historyList.innerHTML = ''; 
+            displayedCount = 0;
+            currentWinData = winResults[round] || null; 
+            currentFilteredGames = historyData.filter(game => game.round === round);
+            totalCountBadge.textContent = `(총 ${currentFilteredGames.length}건)`;
+
+            if (currentFilteredGames.length === 0) {
+                historyList.innerHTML = `<div id="empty-history-msg" class="flex flex-col items-center justify-center h-full text-gray-400 py-10"><i class="fas fa-clipboard-list text-2xl mb-2 opacity-30"></i><span class="text-xs">${round}회차 기록이 없습니다.</span></div>`;
+                return;
+            }
+            loadMoreHistory();
+            if (currentWinData) { calculateAndShowSummary(currentWinData); }
+        }
+
+        function loadMoreHistory() {
+            const nextBatch = currentFilteredGames.slice(displayedCount, displayedCount + PAGE_SIZE);
+            if(nextBatch.length === 0) return;
+            const fragment = document.createDocumentFragment();
+            nextBatch.forEach(game => {
+                const item = createHistoryItemElement(game);
+                if(currentWinData) {
+                    const winArr = [currentWinData.drwtNo1, currentWinData.drwtNo2, currentWinData.drwtNo3, currentWinData.drwtNo4, currentWinData.drwtNo5, currentWinData.drwtNo6];
+                    applyWinStyleToItem(item, winArr, currentWinData.bnusNo, game.numbers);
+                }
+                fragment.appendChild(item);
+            });
+            historyList.appendChild(fragment);
+            displayedCount += nextBatch.length;
+        }
+
+        async function fetchLatestResult() {
+            const round = document.getElementById('round-input').value;
+            if (winResults[round]) {
+                localStorage.setItem('lotto_current_round', round); showModal();
+                const cachedData = winResults[round]; renderModalContent(cachedData);
+                const winArr = [cachedData.drwtNo1, cachedData.drwtNo2, cachedData.drwtNo3, cachedData.drwtNo4, cachedData.drwtNo5, cachedData.drwtNo6];
+                currentWinData = cachedData; checkWinningsInHistory(winArr, cachedData.bnusNo, true); return;
+            }
+            showModal();
+            modalContent.innerHTML = `<div class="animate-pulse flex space-x-2 justify-center items-center h-16"><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div></div><p class="text-gray-500 text-sm mt-2">${round}회차 결과 확인 중...</p>`;
+
+            const startDate = new Date('2002-12-07T00:00:00');
+            const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
+            drawDate.setHours(21, 0, 0, 0); const now = new Date();
+
+            if (drawDate > now) {
+                modalContent.innerHTML = `<div class="text-center py-4"><i class="fas fa-clock text-4xl text-gray-300 mb-2"></i><h4 class="text-lg font-bold text-gray-700">추첨 대기 중</h4><p class="text-gray-500 text-sm mt-1">${round}회차 추첨일은<br>${drawDate.toLocaleDateString()} 입니다.</p></div>`;
+                return;
+            }
+
+            try {
+                // 요청하신 selectPstLt645Info.do API 적용
+                const timestamp = new Date().getTime();
+                const targetUrl = `https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=${round}&_=${timestamp}`;
+                
+                const response = await fetch(targetUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const jsonResponse = await response.json();
+
+                // selectPstLt645Info.do 응답 구조 처리
+                if (jsonResponse.data && jsonResponse.data.list && jsonResponse.data.list.length > 0) {
+                    const lottoData = jsonResponse.data.list[0];
+                    
+                    // 날짜 포맷팅 (YYYYMMDD -> YYYY-MM-DD)
+                    const dateStr = String(lottoData.ltRflYmd);
+                    const formattedDate = dateStr.length === 8 ? `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}` : dateStr;
+
+                    const mappedData = {
+                        drwNo: lottoData.ltEpsd, 
+                        drwNoDate: formattedDate,
+                        drwtNo1: lottoData.tm1WnNo, 
+                        drwtNo2: lottoData.tm2WnNo, 
+                        drwtNo3: lottoData.tm3WnNo,
+                        drwtNo4: lottoData.tm4WnNo, 
+                        drwtNo5: lottoData.tm5WnNo, 
+                        drwtNo6: lottoData.tm6WnNo,
+                        bnusNo: lottoData.bnsWnNo
+                    };
+                    
+                    winResults[round] = mappedData;
+                    localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
+                    localStorage.setItem('lotto_current_round', round); 
+                    currentWinData = mappedData; 
+                    renderModalContent(mappedData);
+                    const winArr = [mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6];
+                    checkWinningsInHistory(winArr, mappedData.bnusNo, true);
+                } else if (jsonResponse.returnValue === 'success') {
+                     // 혹시 common.do 구조로 오는 경우를 대비한 폴백
+                    const lottoData = jsonResponse;
+                    const mappedData = {
+                        drwNo: lottoData.drwNo, drwNoDate: lottoData.drwNoDate,
+                        drwtNo1: lottoData.drwtNo1, drwtNo2: lottoData.drwtNo2, drwtNo3: lottoData.drwtNo3,
+                        drwtNo4: lottoData.drwtNo4, drwtNo5: lottoData.drwtNo5, drwtNo6: lottoData.drwtNo6,
+                        bnusNo: lottoData.bnusNo
+                    };
+                    winResults[round] = mappedData;
+                    localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
+                    localStorage.setItem('lotto_current_round', round);
+                    currentWinData = mappedData;
+                    renderModalContent(mappedData);
+                    const winArr = [mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6];
+                    checkWinningsInHistory(winArr, mappedData.bnusNo, true);
+                } else { 
+                    throw new Error('데이터 형식이 올바르지 않습니다.'); 
+                }
+            } catch (e) {
+                console.warn("Lotto API Fetch Failed:", e);
+                showToast("데이터를 가져올 수 없어 가상 결과로 대체합니다. (CORS 등)", true);
+                
+                const winNumbers = new Set(); while(winNumbers.size < 6) winNumbers.add(Math.floor(Math.random() * 45) + 1);
+                const winArr = Array.from(winNumbers).sort((a,b)=>a-b);
+                const bonus = Math.floor(Math.random() * 45) + 1;
+                const year = drawDate.getFullYear(); const month = String(drawDate.getMonth() + 1).padStart(2, '0'); const day = String(drawDate.getDate()).padStart(2, '0');
+                const simulatedDate = `${year}-${month}-${day} (모의)`;
+                const mockData = { drwNo: round, drwtNo1: winArr[0], drwtNo2: winArr[1], drwtNo3: winArr[2], drwtNo4: winArr[3], drwtNo5: winArr[4], drwtNo6: winArr[5], bnusNo: bonus, drwNoDate: simulatedDate };
+                currentWinData = mockData;
+                winResults[round] = mockData; // Cache mock data
+                localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
+                renderModalContent(mockData);
+                checkWinningsInHistory(winArr, bonus, true);
+            }
+        }
+
+        function checkWinningsInHistory(winArr, bonus, showMessage = true) {
+            const items = document.querySelectorAll('.history-item');
+            items.forEach(item => {
+                if (!item.dataset.numbers) return;
+                const myNumbers = JSON.parse(item.dataset.numbers);
+                applyWinStyleToItem(item, winArr, bonus, myNumbers);
+            });
+            if(currentWinData) calculateAndShowSummary(currentWinData);
+            if(showMessage) showToast("결과 확인 완료!");
+        }
+
+        function renderModalContent(data) {
+            const numbers = [data.drwtNo1, data.drwtNo2, data.drwtNo3, data.drwtNo4, data.drwtNo5, data.drwtNo6];
+            let ballsHtml = '<div class="flex justify-center gap-1 mb-4">';
+            numbers.forEach(num => {
+                ballsHtml += `<div class="lotto-ball small-ball ${getBallColorClass(num)}">${num}</div>`;
+            });
+            ballsHtml += '</div>';
+
+            modalContent.innerHTML = `
+                <div class="text-center">
+                    <p class="text-gray-500 text-sm mb-2">${data.drwNoDate} 추첨</p>
+                    <h4 class="text-2xl font-bold text-indigo-600 mb-4">제 ${data.drwNo}회</h4>
+                    ${ballsHtml}
+                    <div class="flex justify-center items-center gap-2 mt-2">
+                        <span class="text-gray-600 font-bold">보너스</span>
+                        <div class="lotto-ball small-ball ${getBallColorClass(data.bnusNo)}">${data.bnusNo}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showModal() {
+            resultModal.classList.remove('hidden');
+            setTimeout(() => {
+                resultModal.classList.add('opacity-100');
+                resultModal.querySelector('div').classList.remove('scale-95');
+                resultModal.querySelector('div').classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            resultModal.classList.remove('opacity-100');
+            resultModal.querySelector('div').classList.remove('scale-100');
+            resultModal.querySelector('div').classList.add('scale-95');
+            setTimeout(() => {
+                resultModal.classList.add('hidden');
+            }, 300);
+        }
+
         function openDeleteConfirmModal(type, id = null) {
             const currentRoundCount = historyData.filter(g => g.round === currentRound).length;
             if (type === 'ALL' && currentRoundCount === 0) { showToast("삭제할 이번 회차 기록이 없습니다."); return; }
@@ -1050,19 +1184,9 @@ Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast'); document.getElementById('toast-msg').textContent = message;
             const icon = toast.querySelector('i'); if (isError) { toast.classList.remove('bg-gray-800'); toast.classList.add('bg-red-600'); icon.className = "fas fa-exclamation-circle"; } else { toast.classList.remove('bg-red-600'); toast.classList.add('bg-gray-800'); icon.className = "fas fa-check-circle"; }
-            
-            // 기존 타이머가 있다면 취소
-            if (toastTimeoutId) {
-                clearTimeout(toastTimeoutId);
-            }
-
+            if (toastTimeoutId) { clearTimeout(toastTimeoutId); }
             toast.style.opacity = '1';
-
-            // 새로운 타이머 설정
-            toastTimeoutId = setTimeout(() => {
-                toast.style.opacity = '0';
-                toastTimeoutId = null; // 타이머 종료 후 ID 초기화
-            }, 2500);
+            toastTimeoutId = setTimeout(() => { toast.style.opacity = '0'; toastTimeoutId = null; }, 2500);
         }
 
         // [변경] 수동 입력 모달 열기 (생성 모드)
@@ -1210,229 +1334,6 @@ Format: { "numbers": [1, 2, 3, 4, 5, 6], "reason": "이유" }`;
         }
         
         async function processImage(img) { const canvas = document.getElementById('scan-canvas'); const context = canvas.getContext('2d'); const scaleFactor = 1.5; canvas.width = img.width * scaleFactor; canvas.height = img.height * scaleFactor; context.scale(scaleFactor, scaleFactor); context.drawImage(img, 0, 0); const imageData = context.getImageData(0, 0, canvas.width, canvas.height); const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" }); if (code) { const parsedGames = parseLottoQR(code.data); if (parsedGames && parsedGames.length > 0) { finishScan(parsedGames, "QR 스캔"); return; } } await runGeminiAnalysis(canvas.toDataURL("image/jpeg", 0.8)); }
-        async function runGeminiAnalysis(base64Image) { try { 
-            const prompt = `Look at the lottery ticket in the image. Identify the rows of numbers (usually 6 numbers per row between 1 and 45). Ignore prices, dates, or serial numbers. Return the result as a JSON ARRAY of objects. Each object must have: - "label": String (e.g., "A", "B", "C"). If no label, use sequential letters. - "numbers": Array of integers. Example: [{"label": "A", "numbers": [1, 2, 3, 4, 5, 6]}] Return ONLY the JSON string. No markdown code blocks.`;
-            const text = await callGeminiAPI(prompt, base64Image); const extractedGames = parseGeminiResponse(text); if (extractedGames.length > 0) { finishScan(extractedGames, "AI 스캔"); } else { console.log("No numbers found"); } } catch (err) { console.error(err); if (err.message.includes('400') || err.message.includes('401') || err.message.includes('403')) { setTimeout(() => openSettings(), 1500); } } }
-        async function callGeminiAPI(prompt, base64Image) { const keyToUse = userApiKey || apiKey; if (!keyToUse) { showToast("API 키가 설정되지 않았습니다...", true); throw new Error("Missing API Key"); } const cleanBase64 = base64Image.split(',')[1]; const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`; const payload = { contents: [{ parts: [ { text: prompt }, { inlineData: { mimeType: "image/jpeg", data: cleanBase64 } } ] }] }; const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (!response.ok) { throw new Error(`Gemini API Error: ${response.status}`); } const data = await response.json(); return data.candidates[0].content.parts[0].text; }
-        
-        // [수정된 파싱 로직]
-        function parseGeminiResponse(text) { 
-            let games = [];
-            // 1. JSON Parsing Attempt
-            try { 
-                const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim(); 
-                const jsonStart = cleanText.indexOf('['); 
-                const jsonEnd = cleanText.lastIndexOf(']'); 
-                if (jsonStart !== -1 && jsonEnd !== -1) { 
-                    const jsonStr = cleanText.substring(jsonStart, jsonEnd + 1); 
-                    const parsed = JSON.parse(jsonStr); 
-                    parsed.forEach(p => { 
-                        if (p.numbers && Array.isArray(p.numbers)) { 
-                            const validNums = p.numbers.filter(n => typeof n === 'number' && n >= 1 && n <= 45).slice(0, 6).sort((a,b)=>a-b); 
-                            if (validNums.length === 6) { games.push({ label: p.label || '자동', numbers: validNums }); } 
-                        } 
-                    }); 
-                } 
-            } catch (e) { console.log("JSON parsing failed, fallback to text regex"); }
-            if (games.length > 0) return games;
-
-            // 2. Text Parsing Fallback (Improved)
-            const lines = text.split('\n'); 
-            const labels = ['A', 'B', 'C', 'D', 'E'];
-            let labelIndex = 0;
-
-            lines.forEach(line => { 
-                // Remove Markdown table syntax and row indices more aggressively
-                // e.g., "| 1 |", "1.", "Row 1:", "Game 1"
-                let cleanedLine = line
-                    .replace(/^\|?\s*(Row|Game)?\s*\d+[:.]?\s*\|?/, '') // Remove "Row 1", "1."
-                    .replace(/\|\s*$/, ''); // Remove trailing pipe
-                
-                const numsMatch = cleanedLine.match(/\d+/g); 
-                if (!numsMatch) return; 
-                
-                const validNums = numsMatch.map(n => parseInt(n)).filter(n => n >= 1 && n <= 45); 
-                const uniqueNums = [...new Set(validNums)]; 
-                
-                // If we found a valid set of 6 numbers
-                if (uniqueNums.length >= 6) { 
-                    // Take the LAST 6 numbers found in the line to avoid index numbers
-                    const gameNums = uniqueNums.slice(-6).sort((a, b) => a - b); 
-                    
-                    // Assign label: Prefer extracted label, else use sequence
-                    let label = labels[labelIndex % 5]; 
-                    const labelMatch = line.match(/([A-E])[:.)]/i); 
-                    if (labelMatch) { label = labelMatch[1].toUpperCase(); } 
-                    else { labelIndex++; } // Only increment if auto-assigning
-
-                    games.push({ label: label, numbers: gameNums }); 
-                } 
-            }); 
-            return games; 
-        }
-
-        function finishScan(games, method) { 
-            // scanLoader.style.display = 'none'; // Controlled by handleImageUpload
-            // closeGlobalResult(); 
-            if (games.length > 0) { currentNumbers = games[0].numbers; displayNumbers(currentNumbers); } 
-            // Use standard for loop to maintain order if extracted in order
-            // Or reverse if we want latest on top. Let's iterate normally but add to data which unshifts.
-            // If we want A at top, we should add E first.
-            for (let i = games.length - 1; i >= 0; i--) { 
-                const label = games[i].label.replace('Game ', '').replace('Auto Detect ', '자동 '); 
-                addGameToData(games[i].numbers, `${method} ${label}`); 
-            } 
-        }
-        function parseLottoQR(url) { try { if (!url.includes('dhlottery.co.kr') || !url.includes('v=')) return null; let params = url.split('v=')[1]; if (!params) return null; if (params.includes('&')) params = params.split('&')[0]; const cleanStr = params.replace(/[^0-9]/g, ''); if (cleanStr.length < 16) return null; const numbersStr = cleanStr.substring(4); const games = []; const gameLabels = ['A', 'B', 'C', 'D', 'E']; for (let i = 0; i < numbersStr.length; i += 12) { const chunk = numbersStr.substring(i, i + 12); if (chunk.length < 12) break; const nums = []; for (let j = 0; j < 12; j += 2) nums.push(parseInt(chunk.substring(j, j + 2))); if (nums.some(n => n < 1 || n > 45)) continue; games.push({ label: gameLabels[games.length] || '?', numbers: nums.sort((a, b) => a - b) }); if (games.length >= 5) break; } return games; } catch (e) { return null; } }
-        function toggleNotification(checkbox) { isNotificationEnabled = checkbox.checked; localStorage.setItem('lotto_noti_enabled', isNotificationEnabled); if (isNotificationEnabled) { requestNotificationPermission(); startNotificationScheduler(); showToast("토요일 밤 9시에 알림을 보내드릴게요! 🔔"); } else { showToast("알림이 해제되었습니다."); } }
-        function requestNotificationPermission() { if (!("Notification" in window)) { showToast("이 브라우저는 알림을 지원하지 않습니다.", true); return; } if (Notification.permission !== "granted") { Notification.requestPermission().then(permission => { if (permission !== "granted") { notificationToggle.checked = false; isNotificationEnabled = false; localStorage.setItem('lotto_noti_enabled', false); showToast("알림 권한이 거부되었습니다.", true); } }); } }
-        function startNotificationScheduler() { checkWeeklyNotification(); setInterval(checkWeeklyNotification, 60000); }
-        function checkWeeklyNotification() { if (!isNotificationEnabled) return; const now = new Date(); const day = now.getDay(); const hour = now.getHours(); const minute = now.getMinutes(); if (day === 6 && hour === 21 && minute === 0) { const lastSent = localStorage.getItem('last_noti_date'); const todayStr = now.toDateString(); if (lastSent !== todayStr) { sendNotification(); localStorage.setItem('last_noti_date', todayStr); } } }
-        function sendNotification() { if (Notification.permission === "granted") { const options = { body: "행운의 주인공이 되셨나요? 지금 바로 결과를 확인해보세요!", icon: "https://cdn-icons-png.flaticon.com/512/1042/1042319.png", badge: "https://cdn-icons-png.flaticon.com/512/1042/1042319.png", vibrate: [200, 100, 200] }; if (navigator.serviceWorker.controller) { navigator.serviceWorker.ready.then(function(registration) { registration.showNotification("🍀 로또 추첨 결과 확인", options); }); } else { new Notification("🍀 로또 추첨 결과 확인", options); } } }
-
-        async function fetchLatestResult() {
-            const round = document.getElementById('round-input').value;
-            if (winResults[round]) {
-                localStorage.setItem('lotto_current_round', round); showModal();
-                const cachedData = winResults[round]; renderModalContent(cachedData);
-                const winArr = [cachedData.drwtNo1, cachedData.drwtNo2, cachedData.drwtNo3, cachedData.drwtNo4, cachedData.drwtNo5, cachedData.drwtNo6];
-                currentWinData = cachedData; checkWinningsInHistory(winArr, cachedData.bnusNo, true); return;
-            }
-            showModal();
-            modalContent.innerHTML = `<div class="animate-pulse flex space-x-2 justify-center items-center h-16"><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div><div class="h-8 w-8 bg-gray-200 rounded-full"></div></div><p class="text-gray-500 text-sm mt-2">${round}회차 결과 확인 중...</p>`;
-
-            const startDate = new Date('2002-12-07T00:00:00');
-            const drawDate = new Date(startDate.getTime() + (round - 1) * 7 * 24 * 60 * 60 * 1000);
-            drawDate.setHours(21, 0, 0, 0); const now = new Date();
-
-            if (drawDate > now) {
-                modalContent.innerHTML = `<div class="text-center py-4"><i class="fas fa-clock text-4xl text-gray-300 mb-2"></i><h4 class="text-lg font-bold text-gray-700">추첨 대기 중</h4><p class="text-gray-500 text-sm mt-1">${round}회차 추첨일은<br>${drawDate.toLocaleDateString()} 입니다.</p></div>`;
-                return;
-            }
-
-            try {
-                // 요청하신 selectPstLt645Info.do API 적용
-                const timestamp = new Date().getTime();
-                const targetUrl = `https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=${round}&_=${timestamp}`;
-                
-                const response = await fetch(targetUrl);
-                if (!response.ok) throw new Error('Network response was not ok');
-                const jsonResponse = await response.json();
-
-                // selectPstLt645Info.do 응답 구조 처리
-                if (jsonResponse.data && jsonResponse.data.list && jsonResponse.data.list.length > 0) {
-                    const lottoData = jsonResponse.data.list[0];
-                    
-                    // 날짜 포맷팅 (YYYYMMDD -> YYYY-MM-DD)
-                    const dateStr = String(lottoData.ltRflYmd);
-                    const formattedDate = dateStr.length === 8 ? `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}` : dateStr;
-
-                    const mappedData = {
-                        drwNo: lottoData.ltEpsd, 
-                        drwNoDate: formattedDate,
-                        drwtNo1: lottoData.tm1WnNo, 
-                        drwtNo2: lottoData.tm2WnNo, 
-                        drwtNo3: lottoData.tm3WnNo,
-                        drwtNo4: lottoData.tm4WnNo, 
-                        drwtNo5: lottoData.tm5WnNo, 
-                        drwtNo6: lottoData.tm6WnNo,
-                        bnusNo: lottoData.bnsWnNo
-                    };
-                    
-                    winResults[round] = mappedData;
-                    localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
-                    localStorage.setItem('lotto_current_round', round); 
-                    currentWinData = mappedData; 
-                    renderModalContent(mappedData);
-                    const winArr = [mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6];
-                    checkWinningsInHistory(winArr, mappedData.bnusNo, true);
-                } else if (jsonResponse.returnValue === 'success') {
-                     // 혹시 common.do 구조로 오는 경우를 대비한 폴백
-                    const lottoData = jsonResponse;
-                    const mappedData = {
-                        drwNo: lottoData.drwNo, drwNoDate: lottoData.drwNoDate,
-                        drwtNo1: lottoData.drwtNo1, drwtNo2: lottoData.drwtNo2, drwtNo3: lottoData.drwtNo3,
-                        drwtNo4: lottoData.drwtNo4, drwtNo5: lottoData.drwtNo5, drwtNo6: lottoData.drwtNo6,
-                        bnusNo: lottoData.bnusNo
-                    };
-                    winResults[round] = mappedData;
-                    localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
-                    localStorage.setItem('lotto_current_round', round);
-                    currentWinData = mappedData;
-                    renderModalContent(mappedData);
-                    const winArr = [mappedData.drwtNo1, mappedData.drwtNo2, mappedData.drwtNo3, mappedData.drwtNo4, mappedData.drwtNo5, mappedData.drwtNo6];
-                    checkWinningsInHistory(winArr, mappedData.bnusNo, true);
-                } else { 
-                    throw new Error('데이터 형식이 올바르지 않습니다.'); 
-                }
-            } catch (e) {
-                console.warn("Lotto API Fetch Failed:", e);
-                showToast("데이터를 가져올 수 없어 가상 결과로 대체합니다. (CORS 등)", true);
-                
-                const winNumbers = new Set(); while(winNumbers.size < 6) winNumbers.add(Math.floor(Math.random() * 45) + 1);
-                const winArr = Array.from(winNumbers).sort((a,b)=>a-b);
-                const bonus = Math.floor(Math.random() * 45) + 1;
-                const year = drawDate.getFullYear(); const month = String(drawDate.getMonth() + 1).padStart(2, '0'); const day = String(drawDate.getDate()).padStart(2, '0');
-                const simulatedDate = `${year}-${month}-${day} (모의)`;
-                const mockData = { drwNo: round, drwtNo1: winArr[0], drwtNo2: winArr[1], drwtNo3: winArr[2], drwtNo4: winArr[3], drwtNo5: winArr[4], drwtNo6: winArr[5], bnusNo: bonus, drwNoDate: simulatedDate };
-                currentWinData = mockData;
-                winResults[round] = mockData; // Cache mock data
-                localStorage.setItem('lotto_win_results', JSON.stringify(winResults));
-                renderModalContent(mockData);
-                checkWinningsInHistory(winArr, bonus, true);
-            }
-        }
-
-        function checkWinningsInHistory(winArr, bonus, showMessage = true) {
-            const items = document.querySelectorAll('.history-item');
-            items.forEach(item => {
-                if (!item.dataset.numbers) return;
-                const myNumbers = JSON.parse(item.dataset.numbers);
-                applyWinStyleToItem(item, winArr, bonus, myNumbers);
-            });
-            if(currentWinData) calculateAndShowSummary(currentWinData);
-            if(showMessage) showToast("결과 확인 완료!");
-        }
-
-        // Restored Modal Functions
-        function renderModalContent(data) {
-            const numbers = [data.drwtNo1, data.drwtNo2, data.drwtNo3, data.drwtNo4, data.drwtNo5, data.drwtNo6];
-            let ballsHtml = '<div class="flex justify-center gap-1 mb-4">';
-            numbers.forEach(num => {
-                ballsHtml += `<div class="lotto-ball small-ball ${getBallColorClass(num)}">${num}</div>`;
-            });
-            ballsHtml += '</div>';
-
-            modalContent.innerHTML = `
-                <div class="text-center">
-                    <p class="text-gray-500 text-sm mb-2">${data.drwNoDate} 추첨</p>
-                    <h4 class="text-2xl font-bold text-indigo-600 mb-4">제 ${data.drwNo}회</h4>
-                    ${ballsHtml}
-                    <div class="flex justify-center items-center gap-2 mt-2">
-                        <span class="text-gray-600 font-bold">보너스</span>
-                        <div class="lotto-ball small-ball ${getBallColorClass(data.bnusNo)}">${data.bnusNo}</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function showModal() {
-            resultModal.classList.remove('hidden');
-            setTimeout(() => {
-                resultModal.classList.add('opacity-100');
-                resultModal.querySelector('div').classList.remove('scale-95');
-                resultModal.querySelector('div').classList.add('scale-100');
-            }, 10);
-        }
-
-        function closeModal() {
-            resultModal.classList.remove('opacity-100');
-            resultModal.querySelector('div').classList.remove('scale-100');
-            resultModal.querySelector('div').classList.add('scale-95');
-            setTimeout(() => {
-                resultModal.classList.add('hidden');
-            }, 300);
-        }
 
         resultModal.addEventListener('click', (e) => { if (e.target === resultModal) closeModal(); });
         init();
